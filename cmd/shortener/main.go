@@ -40,25 +40,28 @@ func (h MyHandler) get(id string) (string, bool) {
 }
 
 func (h MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+	log.Print("received request ")
 	if r.Method == http.MethodGet {
-
+		log.Print("received get method " + r.URL.Path)
 		id := r.URL.Path[1:]
 		if id == "" {
 			http.Error(w, "The query parameter is missing", http.StatusBadRequest)
 			return
 		}
-		log.Print("found id = " + id)
+		log.Print("parsed id = " + id)
 		val, ok := h.get(id)
 		if ok {
+			log.Print("found value = " + val)
 			w.Header().Set("Location", val)
 			w.WriteHeader(http.StatusTemporaryRedirect)
 		} else {
+			log.Print("not found id " + id)
 			http.Error(w, "not found "+id, http.StatusBadRequest)
 		}
 		return
 
 	} else if r.Method == http.MethodPost {
+		log.Print("received post method " + r.URL.Path)
 		// читаем Body
 		b, err := io.ReadAll(r.Body)
 		// обрабатываем ошибку
@@ -67,6 +70,7 @@ func (h MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		url := string(b)
+		log.Print("received body = " + url)
 		if url == "" {
 			http.Error(w, "empty url in body", http.StatusBadRequest)
 			return
