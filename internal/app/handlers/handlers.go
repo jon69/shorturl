@@ -18,7 +18,7 @@ func MakeMyHandler() MyHandler {
 	return h
 }
 
-func (h *MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Print("received request ")
 	if r.Method == http.MethodGet {
 		log.Print("received get method " + r.URL.Path)
