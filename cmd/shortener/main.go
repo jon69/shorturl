@@ -11,7 +11,7 @@ import (
 
 var counter uint64 = 0
 
-func getNewId() string {
+func getNewID() string {
 	for {
 		val := atomic.LoadUint64(&counter)
 		if atomic.CompareAndSwapUint64(&counter, val, val+1) {
@@ -76,16 +76,15 @@ func (h MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Print("url = " + url)
-		id := getNewId()
+		id := getNewID()
 		log.Print("id = " + id)
 		h.put(id, url)
 		w.Header().Set("content-type", "plain/text")
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(id))
+		w.Write([]byte("http://localhost:8080/" + id))
 		return
 	}
 	http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-	return
 }
 
 func main() {
