@@ -60,40 +60,37 @@ func TestServeHTTP(t *testing.T) {
 	hendl := MakeMyHandler()
 
 	for _, tt := range tests {
-		// запускаем каждый тест
-		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(tt.req.method, tt.req.url, strings.NewReader(tt.req.body))
+		request := httptest.NewRequest(tt.req.method, tt.req.url, strings.NewReader(tt.req.body))
 
-			// создаём новый Recorder
-			w := httptest.NewRecorder()
-			// определяем хендлер
-			h := http.HandlerFunc(hendl.ServeHTTP)
-			// запускаем сервер
-			h.ServeHTTP(w, request)
-			res := w.Result()
+		// создаём новый Recorder
+		w := httptest.NewRecorder()
+		// определяем хендлер
+		h := http.HandlerFunc(hendl.ServeHTTP)
+		// запускаем сервер
+		h.ServeHTTP(w, request)
+		res := w.Result()
 
-			// проверяем код ответа
-			if res.StatusCode != tt.resp.code {
-				t.Errorf("Expected status code %d, got %d", tt.resp.code, w.Code)
-			}
+		// проверяем код ответа
+		if res.StatusCode != tt.resp.code {
+			t.Errorf("Expected status code %d, got %d", tt.resp.code, w.Code)
+		}
 
-			// получаем и проверяем тело запроса
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(resBody) != tt.resp.body {
-				t.Errorf("Expected body %s, got %s", tt.resp.body, w.Body.String())
-			}
-			// заголовок ответа
-			if res.Header.Get("Content-Type") != tt.resp.contentType {
-				t.Errorf("Expected Content-Type %s, got %s", tt.resp.contentType, res.Header.Get("Content-Type"))
-			}
+		// получаем и проверяем тело запроса
+		defer res.Body.Close()
+		resBody, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(resBody) != tt.resp.body {
+			t.Errorf("Expected body %s, got %s", tt.resp.body, w.Body.String())
+		}
+		// заголовок ответа
+		if res.Header.Get("Content-Type") != tt.resp.contentType {
+			t.Errorf("Expected Content-Type %s, got %s", tt.resp.contentType, res.Header.Get("Content-Type"))
+		}
 
-			if res.Header.Get("Location") != tt.resp.location {
-				t.Errorf("Expected Location %s, got %s", tt.resp.location, res.Header.Get("Location"))
-			}
-		})
+		if res.Header.Get("Location") != tt.resp.location {
+			t.Errorf("Expected Location %s, got %s", tt.resp.location, res.Header.Get("Location"))
+		}
 	}
 }
