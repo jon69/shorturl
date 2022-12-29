@@ -4,23 +4,17 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/valyala/fasthttp"
-
+	"github.com/go-chi/chi/v5"
 	"github.com/jon69/shorturl/internal/app/handlers"
 )
 
 func RunNetHTTP() {
 	handler1 := handlers.MakeMyHandler()
 
-	server := &http.Server{
-		Addr:    "localhost:8080",
-		Handler: handler1,
-	}
-	log.Fatal(server.ListenAndServe())
-}
+	r := chi.NewRouter()
 
-//----------------------------------------------
-func RunFastHTTP() {
-	handler1 := handlers.MakeMyHandlerFastHTTP()
-	fasthttp.ListenAndServe("localhost:8080", handler1.HandleFastHTTP)
+	r.Get("/{id}", handler1.ServeHTTP)
+	r.Post("/", handler1.ServeHTTP)
+
+	log.Fatal(http.ListenAndServe(":8080", r))
 }

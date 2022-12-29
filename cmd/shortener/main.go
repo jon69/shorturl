@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	server.RunFastHTTP()
+	server.RunNetHTTP()
 }
