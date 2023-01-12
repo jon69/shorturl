@@ -65,7 +65,14 @@ func TestServeHTTP(t *testing.T) {
 		// создаём новый Recorder
 		w := httptest.NewRecorder()
 		// определяем хендлер
-		h := http.HandlerFunc(hendl.ServeHTTP)
+
+		var foo http.HandlerFunc
+		if tt.req.method == http.MethodGet {
+			foo = hendl.ServeGetHTTP
+		} else {
+			foo = hendl.ServePostHTTP
+		}
+		h := http.HandlerFunc(foo)
 		// запускаем сервер
 		h.ServeHTTP(w, request)
 		res := w.Result()
