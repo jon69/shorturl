@@ -9,12 +9,13 @@ import (
 )
 
 func RunNetHTTP() {
-	handler1 := handlers.MakeMyHandler()
+	handler := handlers.MakeMyHandler()
 
 	r := chi.NewRouter()
 
-	r.Get("/{id}", handler1.ServeHTTP)
-	r.Post("/", handler1.ServeHTTP)
+	r.Get("/{id}", handler.ServeGetHTTP)
+	r.Post("/", handler.ServePostHTTP)
+	r.Post("/api/shorten", handler.ServeShortenPostHTTP)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
