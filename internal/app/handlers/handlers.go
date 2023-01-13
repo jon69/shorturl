@@ -11,13 +11,13 @@ import (
 
 type MyHandler struct {
 	urlstorage *storage.StorageURL
-	base_url   string
+	baseURL    string
 }
 
-func MakeMyHandler(base_url string) MyHandler {
+func MakeMyHandler(baseURL string) MyHandler {
 	h := MyHandler{}
 	h.urlstorage = storage.NewStorage()
-	h.base_url = base_url
+	h.baseURL = baseURL
 	return h
 }
 
@@ -114,7 +114,7 @@ func (h MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
 		id := h.urlstorage.PutURL(url)
 		w.Header().Set("content-type", "plain/text")
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(h.base_url + id))
+		w.Write([]byte(h.baseURL + "/" + id))
 		return
 	}
 	http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -154,7 +154,7 @@ func (h MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 		log.Print("url = " + url)
 		var mrurl MyResultURL
-		mrurl.URL = h.base_url + h.urlstorage.PutURL(url)
+		mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
 
 		txBz, err := json.Marshal(mrurl)
 		if err != nil {

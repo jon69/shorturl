@@ -8,17 +8,17 @@ import (
 )
 
 func main() {
-	server_address := os.Getenv("SERVER_ADDRESS")
-	base_url := os.Getenv("BASE_URL")
+	serverAddress := os.Getenv("SERVER_ADDRESS")
+	baseURL := os.Getenv("BASE_URL")
 
-	log.Print("os SERVER_ADDRESS=" + server_address)
-	log.Print("os BASE_URL=" + base_url)
+	log.Print("os SERVER_ADDRESS=" + serverAddress)
+	log.Print("os BASE_URL=" + baseURL)
 
-	if server_address == "" {
-		server_address = "127.0.0.1:8080"
+	if serverAddress == "" {
+		serverAddress = "127.0.0.1:8080"
 	}
-	if base_url == "" {
-		base_url = "http://localhost:8080/"
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
 	}
-	server.RunNetHTTP(server_address, base_url)
+	server.RunNetHTTP(serverAddress, baseURL)
 }
