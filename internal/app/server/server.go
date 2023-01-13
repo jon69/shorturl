@@ -8,8 +8,8 @@ import (
 	"github.com/jon69/shorturl/internal/app/handlers"
 )
 
-func RunNetHTTP(server_address string, base_url string) {
-	handler := handlers.MakeMyHandler(base_url)
+func RunNetHTTP(serverAddress string, baseURL string) {
+	handler := handlers.MakeMyHandler(baseURL)
 
 	r := chi.NewRouter()
 
@@ -17,5 +17,5 @@ func RunNetHTTP(server_address string, base_url string) {
 	r.Post("/", handler.ServePostHTTP)
 	r.Post("/api/shorten", handler.ServeShortenPostHTTP)
 
-	log.Fatal(http.ListenAndServe(server_address, r))
+	log.Fatal(http.ListenAndServe(serverAddress, r))
 }
