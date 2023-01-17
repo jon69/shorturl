@@ -53,8 +53,8 @@ func (h *StorageURL) restoreFromFile() {
 	if h.filePath != "" {
 		log.Print("opening file...")
 		file, err := os.OpenFile(h.filePath, os.O_RDONLY|os.O_CREATE, 0777)
-		defer file.Close()
 		if err == nil {
+			defer file.Close()
 			log.Print("readin from file...")
 			reader := bufio.NewReader(file)
 			for data, err := reader.ReadBytes('\n'); err == nil; data, err = reader.ReadBytes('\n') {
@@ -72,7 +72,6 @@ func (h *StorageURL) restoreFromFile() {
 			log.Print("can not open file to read: " + err.Error())
 		}
 	}
-	return
 }
 
 func (h *StorageURL) PutURL(value string) string {
@@ -81,12 +80,12 @@ func (h *StorageURL) PutURL(value string) string {
 
 	var event Event
 	var data []byte
-	var err_marshal error
+	var errMarshal error
 
 	if h.filePath != "" {
 		event = Event{Key: key, Value: value}
-		data, err_marshal = json.Marshal(&event)
-		if err_marshal != nil {
+		data, errMarshal = json.Marshal(&event)
+		if errMarshal != nil {
 			log.Print("can not json.marshal")
 		} else {
 			data = append(data, '\n')
@@ -99,11 +98,11 @@ func (h *StorageURL) PutURL(value string) string {
 	strKey := fmt.Sprint(key)
 	h.shorturlMap[strKey] = value
 
-	if h.filePath != "" && err_marshal == nil {
+	if h.filePath != "" && errMarshal == nil {
 		log.Print("opening file...")
 		file, err := os.OpenFile(h.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
-		defer file.Close()
 		if err == nil {
+			defer file.Close()
 			log.Print("writing to file...")
 			log.Print(data)
 			_, err = file.Write(data)
