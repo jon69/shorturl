@@ -14,9 +14,9 @@ type MyHandler struct {
 	baseURL    string
 }
 
-func MakeMyHandler(baseURL string) MyHandler {
+func MakeMyHandler(baseURL string, filePath string) MyHandler {
 	h := MyHandler{}
-	h.urlstorage = storage.NewStorage()
+	h.urlstorage = storage.NewStorage(filePath)
 	h.baseURL = baseURL
 	return h
 }

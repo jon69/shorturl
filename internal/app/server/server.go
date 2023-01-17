@@ -8,8 +8,8 @@ import (
 	"github.com/jon69/shorturl/internal/app/handlers"
 )
 
-func RunNetHTTP(serverAddress string, baseURL string) {
-	handler := handlers.MakeMyHandler(baseURL)
+func RunNetHTTP(serverAddress string, baseURL string, filePath string) {
+	handler := handlers.MakeMyHandler(baseURL, filePath)
 
 	r := chi.NewRouter()
 
