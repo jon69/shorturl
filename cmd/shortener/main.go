@@ -9,6 +9,9 @@ import (
 )
 
 func main() {
+	args := os.Args
+	log.Printf("Все аргументы запуска: %v\n", args)
+
 	serverAddress := os.Getenv("SERVER_ADDRESS")
 	baseURL := os.Getenv("BASE_URL")
 	filePath := os.Getenv("FILE_STORAGE_PATH")
