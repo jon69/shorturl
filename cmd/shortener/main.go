@@ -21,7 +21,7 @@ func main() {
 		flag.StringVar(&serverAddress, "a", "127.0.0.1:8080", "server address")
 	}
 	if baseURL == "" {
-		flag.StringVar(&baseURL, "b", "http://localhost:8080", "base url")
+		flag.StringVar(&baseURL, "b", "http://127.0.0.1:8080", "base url")
 	}
 	if filePath == "" {
 		flag.StringVar(&filePath, "f", "", "path to file")
