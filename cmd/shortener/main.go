@@ -29,6 +29,7 @@ func main() {
 	if filePath == "" {
 		flag.StringVar(&filePath, "f", "", "path to file")
 	}
+	flag.Parse()
 	log.Print("path to file = " + filePath)
 	log.Print("server address = " + serverAddress)
 	log.Print("base url = " + baseURL)
