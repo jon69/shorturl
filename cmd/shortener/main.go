@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 
@@ -17,10 +18,17 @@ func main() {
 	log.Print("os BASE_URL=" + baseURL)
 
 	if serverAddress == "" {
-		serverAddress = "127.0.0.1:8080"
+		flag.StringVar(&serverAddress, "a", "127.0.0.1:8080", "server address")
 	}
 	if baseURL == "" {
-		baseURL = "http://localhost:8080"
+		flag.StringVar(&baseURL, "b", "http://localhost:8080", "base url")
 	}
+	if filePath == "" {
+		flag.StringVar(&filePath, "f", "", "path to file")
+	}
+	log.Print("path to file = " + filePath)
+	log.Print("server address = " + serverAddress)
+	log.Print("base url = " + baseURL)
+
 	server.RunNetHTTP(serverAddress, baseURL, filePath)
 }
