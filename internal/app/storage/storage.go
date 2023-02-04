@@ -54,7 +54,7 @@ type Event struct {
 	User  string `json:"user"`
 	Key   uint64 `json:"key"`
 	Value string `json:"value"`
-	Uid   string `json:"uid"`
+	UID   string `json:"uid"`
 }
 
 func max(value1 uint64, value2 uint64) uint64 {
@@ -81,8 +81,8 @@ func (h *StorageURL) restoreFromFile() {
 					log.Print("user  = " + event.User)
 					log.Print("key   = " + keyStr)
 					log.Print("value = " + event.Value)
-					log.Print("uid   = " + event.Uid)
-					h.put(event.User, keyStr, event.Value, event.Uid)
+					log.Print("uid   = " + event.UID)
+					h.put(event.User, keyStr, event.Value, event.UID)
 				}
 			}
 		} else {
@@ -101,7 +101,7 @@ func (h *StorageURL) PutUserURL(uid string, value string) string {
 	var errMarshal error
 
 	if h.filePath != "" {
-		event = Event{User: user, Key: key, Value: value, Uid: uid}
+		event = Event{User: user, Key: key, Value: value, UID: uid}
 		data, errMarshal = json.Marshal(&event)
 		if errMarshal != nil {
 			log.Print("can not json.marshal")
