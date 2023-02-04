@@ -40,7 +40,7 @@ func (h MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
-	urlsJSON, ok := h.urlstorage.GetURLS()
+	urlsJSON, ok := h.urlstorage.GetURLS(h.baseURL)
 	if !ok {
 		http.Error(w, "cant get all urls", http.StatusInternalServerError)
 		return

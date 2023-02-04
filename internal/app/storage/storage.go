@@ -129,13 +129,13 @@ type MyURLS struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func (h *StorageURL) GetURLS() ([]byte, bool) {
+func (h *StorageURL) GetURLS(url string) ([]byte, bool) {
 	log.Print("StorageURL.GetURLS")
 	h.mux.RLock()
 
 	var urls []MyURLS
 	for key, element := range h.shorturlMap {
-		urls = append(urls, MyURLS{ShortURL: key, OriginalURL: element})
+		urls = append(urls, MyURLS{ShortURL: url + "/" + key, OriginalURL: element})
 	}
 
 	if len(urls) == 0 {
