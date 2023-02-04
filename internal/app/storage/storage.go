@@ -11,20 +11,28 @@ import (
 )
 
 type StorageURL struct {
-	shorturlMap map[string]string
-	mux         *sync.RWMutex
-	counter     uint64
-	filePath    string
+	urls     map[string]map[string]string
+	mux      *sync.RWMutex
+	counter  uint64
+	filePath string
 }
 
 func NewStorage(filePath string) *StorageURL {
 	s := &StorageURL{}
 	s.mux = &sync.RWMutex{}
-	s.shorturlMap = make(map[string]string)
+	s.urls = make(map[string]map[string]string)
 	s.counter = 0
 	s.filePath = filePath
 	s.restoreFromFile()
 	return s
+}
+
+func (h *StorageURL) put(user string, key string, value string) {
+	_, ok := h.urls[user]
+	if !ok {
+		h.urls[user] = make(map[string]string)
+	}
+	h.urls[user][key] = value
 }
 
 func (h *StorageURL) getNewID() uint64 {
@@ -38,6 +46,7 @@ func (h *StorageURL) getNewID() uint64 {
 }
 
 type Event struct {
+	User  string `json:"user"`
 	Key   uint64 `json:"key"`
 	Value string `json:"value"`
 }
@@ -63,9 +72,10 @@ func (h *StorageURL) restoreFromFile() {
 				if err == nil {
 					h.counter = max(h.counter, event.Key)
 					keyStr := fmt.Sprint(event.Key)
-					log.Print("key = " + keyStr)
+					log.Print("user  = " + event.User)
+					log.Print("key   = " + keyStr)
 					log.Print("value = " + event.Value)
-					h.shorturlMap[keyStr] = event.Value
+					h.put(event.User, keyStr, event.Value)
 				}
 			}
 		} else {
@@ -74,8 +84,8 @@ func (h *StorageURL) restoreFromFile() {
 	}
 }
 
-func (h *StorageURL) PutURL(value string) string {
-	log.Print("StorageURL.PutURL")
+func (h *StorageURL) PutUserURL(user string, value string) string {
+	log.Print("StorageURL.PutURL user=", user)
 	key := h.getNewID()
 
 	var event Event
@@ -83,7 +93,7 @@ func (h *StorageURL) PutURL(value string) string {
 	var errMarshal error
 
 	if h.filePath != "" {
-		event = Event{Key: key, Value: value}
+		event = Event{User: user, Key: key, Value: value}
 		data, errMarshal = json.Marshal(&event)
 		if errMarshal != nil {
 			log.Print("can not json.marshal")
@@ -96,7 +106,7 @@ func (h *StorageURL) PutURL(value string) string {
 	defer h.mux.Unlock()
 
 	strKey := fmt.Sprint(key)
-	h.shorturlMap[strKey] = value
+	h.put(user, strKey, value)
 
 	if h.filePath != "" && errMarshal == nil {
 		log.Print("opening file...")
@@ -116,10 +126,17 @@ func (h *StorageURL) PutURL(value string) string {
 	return strKey
 }
 
-func (h *StorageURL) GetURL(id string) (string, bool) {
-	log.Print("StorageURL.GetURL")
+func (h *StorageURL) GetUserURL(user string, id string) (string, bool) {
+	log.Print("StorageURL.GetURL user=", user)
+	var val string
+	var ok bool
+	ok = false
+
 	h.mux.RLock()
-	val, ok := h.shorturlMap[id]
+	userURLS, isExist := h.urls[user]
+	if isExist {
+		val, ok = userURLS[id]
+	}
 	h.mux.RUnlock()
 	return val, ok
 }
@@ -129,25 +146,42 @@ type MyURLS struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func (h *StorageURL) GetURLS(url string) ([]byte, bool) {
-	log.Print("StorageURL.GetURLS")
+func (h *StorageURL) GetUserURLS(user string, url string) ([]byte, bool) {
+	log.Print("StorageURL.GetURLS user=", user)
 	h.mux.RLock()
 
 	var urls []MyURLS
-	for key, element := range h.shorturlMap {
-		urls = append(urls, MyURLS{ShortURL: url + "/" + key, OriginalURL: element})
+	var urlsJSON []byte
+	retOK := true
+
+	userURLS, ok := h.urls[user]
+	if ok {
+		for key, element := range userURLS {
+			urls = append(urls, MyURLS{ShortURL: url + "/" + key, OriginalURL: element})
+		}
 	}
 
-	if len(urls) == 0 {
-		return []byte{}, true
-	}
-
-	urlsJSON, err := json.Marshal(urls)
-	if err != nil {
-		log.Print("Marshal all urls fail ", err.Error())
-		return []byte{}, false
+	if len(urls) != 0 {
+		var err error
+		urlsJSON, err = json.Marshal(urls)
+		if err != nil {
+			log.Print("Marshal all urls fail ", err.Error())
+			retOK = false
+		}
 	}
 
 	h.mux.RUnlock()
-	return urlsJSON, true
+	return urlsJSON, retOK
+}
+
+func (h *StorageURL) PutURL(value string) string {
+	return h.PutUserURL("1", value)
+}
+
+func (h *StorageURL) GetURL(id string) (string, bool) {
+	return h.GetUserURL("1", id)
+}
+
+func (h *StorageURL) GetURLS(url string) ([]byte, bool) {
+	return h.GetUserURLS("1", url)
 }

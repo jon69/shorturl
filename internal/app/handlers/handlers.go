@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"fmt"
+
 	"github.com/jon69/shorturl/internal/app/storage"
 )
 
@@ -22,13 +24,22 @@ func MakeMyHandler(baseURL string, filePath string) MyHandler {
 }
 
 func (h MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id := r.URL.Path[1:]
 	if id == "" {
 		http.Error(w, "The query parameter is missing", http.StatusBadRequest)
 		return
 	}
 	log.Print("parsed id = " + id)
-	val, ok := h.urlstorage.GetURL(id)
+	var val string
+	var ok bool
+
+	if v := ctx.Value("uid"); v != nil {
+		val, ok = h.urlstorage.GetUserURL(fmt.Sprintf("%v", v), id)
+	} else {
+		val, ok = h.urlstorage.GetURL(id)
+	}
 	if ok {
 		log.Print("found value = " + val)
 		w.Header().Set("Location", val)
@@ -40,7 +51,17 @@ func (h MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
-	urlsJSON, ok := h.urlstorage.GetURLS(h.baseURL)
+	ctx := r.Context()
+
+	var urlsJSON []byte
+	var ok bool
+
+	if v := ctx.Value("uid"); v != nil {
+		urlsJSON, ok = h.urlstorage.GetUserURLS(fmt.Sprintf("%v", v), h.baseURL)
+	} else {
+		urlsJSON, ok = h.urlstorage.GetURLS(h.baseURL)
+	}
+
 	if !ok {
 		http.Error(w, "cant get all urls", http.StatusInternalServerError)
 		return
@@ -57,6 +78,7 @@ func (h MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	// читаем Body
 	b, err := io.ReadAll(r.Body)
 	// обрабатываем ошибку
@@ -71,7 +93,14 @@ func (h MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Print("url = " + url)
-	id := h.urlstorage.PutURL(url)
+
+	var id string
+	if v := ctx.Value("uid"); v != nil {
+		id = h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url)
+	} else {
+		id = h.urlstorage.PutURL(url)
+	}
+
 	w.Header().Set("content-type", "plain/text")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(h.baseURL + "/" + id))
@@ -86,6 +115,7 @@ type MyResultURL struct {
 }
 
 func (h MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	// читаем Body
 	b, err := io.ReadAll(r.Body)
 	// обрабатываем ошибку
@@ -108,7 +138,12 @@ func (h MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 	log.Print("url = " + url)
 	var mrurl MyResultURL
-	mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
+
+	if v := ctx.Value("uid"); v != nil {
+		mrurl.URL = h.baseURL + "/" + h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url)
+	} else {
+		mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
+	}
 
 	txBz, err := json.Marshal(mrurl)
 	if err != nil {

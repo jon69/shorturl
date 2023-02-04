@@ -14,6 +14,7 @@ import (
 
 	"errors"
 
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 
@@ -78,7 +79,7 @@ func gzipHandle(nextFunc http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func getNewSignedCookie(secretKey []byte) http.Cookie {
+func getNewSignedCookie(secretKey []byte) (http.Cookie, string) {
 	// создаем новый идентификатор
 	myuuid := uuid.NewV4()
 	log.Println("new UUID is: ", myuuid.String())
@@ -95,10 +96,10 @@ func getNewSignedCookie(secretKey []byte) http.Cookie {
 	signatureHEX := hex.EncodeToString(signature)
 	// Prepend the cookie value with the HMAC signature.
 	cookieUID.Value = signatureHEX + "-" + cookieUID.Value
-	return cookieUID
+	return cookieUID, myuuid.String()
 }
 
-func validateCookie(secretKey []byte, cookieSigned *http.Cookie) bool {
+func validateCookie(secretKey []byte, cookieSigned *http.Cookie) (bool, string) {
 	// A SHA256 HMAC signature has a fixed length of 32 bytes. To avoid a potential
 	// 'index out of range' panic in the next step, we need to check sure that the
 	// length of the signed cookie value is at least this long. We'll use the
@@ -106,13 +107,13 @@ func validateCookie(secretKey []byte, cookieSigned *http.Cookie) bool {
 	// a bit more understandable at a glance.
 	signedValue := cookieSigned.Value
 	if len(signedValue) < 4 {
-		return false
+		return false, ""
 	}
 
 	i := strings.Index(signedValue, "-")
 	if i == -1 {
 		log.Println("not found: - ")
-		return false
+		return false, ""
 	}
 
 	log.Println("i=", i)
@@ -127,7 +128,7 @@ func validateCookie(secretKey []byte, cookieSigned *http.Cookie) bool {
 	signature, err := hex.DecodeString(signatureHEX)
 	if err != nil {
 		log.Println("error to decode hex signature")
-		return false
+		return false, ""
 	}
 
 	// Recalculate the HMAC signature of the cookie name and original value.
@@ -141,35 +142,44 @@ func validateCookie(secretKey []byte, cookieSigned *http.Cookie) bool {
 	// and value haven't been edited by the client.
 	if !hmac.Equal(signature, expectedSignature) {
 		log.Println("cookie not equal")
-		return false
+		return false, ""
 	}
 	log.Println("cookie equal")
 	// Return the original cookie value.
-	return true
+	return true, value
 }
 
 func authHandle(secretKey []byte, nextFunc http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Print("received request, method = ", r.Method)
+		log.Print("request, path = ", r.URL.Path)
+		uid := "emptyString"
 		uidCookie, err := r.Cookie("uid")
 		if err != nil { // куки нет, либо ошибка
 			switch {
 			case errors.Is(err, http.ErrNoCookie): // куки нет
 				log.Println("cookie not found")
 				log.Println(err)
-				newCookie := getNewSignedCookie(secretKey)
+				var newCookie http.Cookie
+				newCookie, uid = getNewSignedCookie(secretKey)
 				http.SetCookie(w, &newCookie)
 			default: // ошибка
 				log.Println(err)
 				http.Error(w, "server error", http.StatusInternalServerError)
+				return
 			}
 		} else { // кука есть
 			log.Println("found cookie=" + uidCookie.Value)
-			if !validateCookie(secretKey, uidCookie) {
-				newCookie := getNewSignedCookie(secretKey)
+			var equal bool
+			equal, uid = validateCookie(secretKey, uidCookie)
+			if !equal {
+				var newCookie http.Cookie
+				newCookie, uid = getNewSignedCookie(secretKey)
 				http.SetCookie(w, &newCookie)
 			}
 		}
-		nextFunc(w, r)
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "uid", uid)
+		nextFunc(w, r.WithContext(ctx))
 	})
 }
