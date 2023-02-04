@@ -37,7 +37,6 @@ func (h MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Print("not found id " + id)
 		http.Error(w, "not found "+id, http.StatusNotFound)
 	}
-	return
 }
 
 func (h MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +75,6 @@ func (h MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "plain/text")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(h.baseURL + "/" + id))
-	return
 }
 
 type MyURL struct {
@@ -122,5 +120,4 @@ func (h MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(txBz)
-	return
 }
