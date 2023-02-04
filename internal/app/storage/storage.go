@@ -123,3 +123,31 @@ func (h *StorageURL) GetURL(id string) (string, bool) {
 	h.mux.RUnlock()
 	return val, ok
 }
+
+type MyURLS struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
+func (h *StorageURL) GetURLS() ([]byte, bool) {
+	log.Print("StorageURL.GetURLS")
+	h.mux.RLock()
+
+	var urls []MyURLS
+	for key, element := range h.shorturlMap {
+		urls = append(urls, MyURLS{ShortURL: key, OriginalURL: element})
+	}
+
+	if len(urls) == 0 {
+		return []byte{}, true
+	}
+
+	urlsJSON, err := json.Marshal(urls)
+	if err != nil {
+		log.Print("Marshal all urls fail ", err.Error())
+		return []byte{}, false
+	}
+
+	h.mux.RUnlock()
+	return urlsJSON, true
+}

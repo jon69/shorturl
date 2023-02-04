@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"flag"
 	"log"
 	"os"
@@ -34,5 +35,22 @@ func main() {
 	log.Print("server address = " + serverAddress)
 	log.Print("base url = " + baseURL)
 
-	server.RunNetHTTP(serverAddress, baseURL, filePath)
+	key, err := generateRandom(16)
+	if err != nil {
+		log.Println("error to generate new key")
+		return
+	}
+	log.Println("generated new key")
+	server.RunNetHTTP(serverAddress, baseURL, filePath, key)
+}
+
+func generateRandom(size int) ([]byte, error) {
+	// генерируем случайную последовательность байт
+	b := make([]byte, size)
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
