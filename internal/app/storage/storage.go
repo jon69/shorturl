@@ -10,8 +10,13 @@ import (
 	"sync/atomic"
 )
 
+type MyPair struct {
+	uid   string
+	value string
+}
+
 type StorageURL struct {
-	urls     map[string]map[string]string
+	urls     map[string]map[string]MyPair
 	mux      *sync.RWMutex
 	counter  uint64
 	filePath string
@@ -20,19 +25,19 @@ type StorageURL struct {
 func NewStorage(filePath string) *StorageURL {
 	s := &StorageURL{}
 	s.mux = &sync.RWMutex{}
-	s.urls = make(map[string]map[string]string)
+	s.urls = make(map[string]map[string]MyPair)
 	s.counter = 0
 	s.filePath = filePath
 	s.restoreFromFile()
 	return s
 }
 
-func (h *StorageURL) put(user string, key string, value string) {
+func (h *StorageURL) put(user string, key string, v string, u string) {
 	_, ok := h.urls[user]
 	if !ok {
-		h.urls[user] = make(map[string]string)
+		h.urls[user] = make(map[string]MyPair)
 	}
-	h.urls[user][key] = value
+	h.urls[user][key] = MyPair{value: v, uid: u}
 }
 
 func (h *StorageURL) getNewID() uint64 {
@@ -49,6 +54,7 @@ type Event struct {
 	User  string `json:"user"`
 	Key   uint64 `json:"key"`
 	Value string `json:"value"`
+	Uid   string `json:"uid"`
 }
 
 func max(value1 uint64, value2 uint64) uint64 {
@@ -75,7 +81,8 @@ func (h *StorageURL) restoreFromFile() {
 					log.Print("user  = " + event.User)
 					log.Print("key   = " + keyStr)
 					log.Print("value = " + event.Value)
-					h.put(event.User, keyStr, event.Value)
+					log.Print("uid   = " + event.Uid)
+					h.put(event.User, keyStr, event.Value, event.Uid)
 				}
 			}
 		} else {
@@ -84,7 +91,8 @@ func (h *StorageURL) restoreFromFile() {
 	}
 }
 
-func (h *StorageURL) PutUserURL(user string, value string) string {
+func (h *StorageURL) PutUserURL(uid string, value string) string {
+	user := "1"
 	log.Print("StorageURL.PutURL user=", user)
 	key := h.getNewID()
 
@@ -93,7 +101,7 @@ func (h *StorageURL) PutUserURL(user string, value string) string {
 	var errMarshal error
 
 	if h.filePath != "" {
-		event = Event{User: user, Key: key, Value: value}
+		event = Event{User: user, Key: key, Value: value, Uid: uid}
 		data, errMarshal = json.Marshal(&event)
 		if errMarshal != nil {
 			log.Print("can not json.marshal")
@@ -106,7 +114,7 @@ func (h *StorageURL) PutUserURL(user string, value string) string {
 	defer h.mux.Unlock()
 
 	strKey := fmt.Sprint(key)
-	h.put(user, strKey, value)
+	h.put(user, strKey, value, uid)
 
 	if h.filePath != "" && errMarshal == nil {
 		log.Print("opening file...")
@@ -126,9 +134,10 @@ func (h *StorageURL) PutUserURL(user string, value string) string {
 	return strKey
 }
 
-func (h *StorageURL) GetUserURL(user string, id string) (string, bool) {
+func (h *StorageURL) GetUserURL(uid string, id string) (string, bool) {
+	user := "1"
 	log.Print("StorageURL.GetURL user=", user)
-	var val string
+	var val MyPair
 	var ok bool
 	ok = false
 
@@ -138,7 +147,7 @@ func (h *StorageURL) GetUserURL(user string, id string) (string, bool) {
 		val, ok = userURLS[id]
 	}
 	h.mux.RUnlock()
-	return val, ok
+	return val.value, ok
 }
 
 type MyURLS struct {
@@ -146,7 +155,8 @@ type MyURLS struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func (h *StorageURL) GetUserURLS(user string, url string) ([]byte, bool) {
+func (h *StorageURL) GetUserURLS(uid string, url string) ([]byte, bool) {
+	user := "1"
 	log.Print("StorageURL.GetURLS user=", user)
 	h.mux.RLock()
 
@@ -157,7 +167,9 @@ func (h *StorageURL) GetUserURLS(user string, url string) ([]byte, bool) {
 	userURLS, ok := h.urls[user]
 	if ok {
 		for key, element := range userURLS {
-			urls = append(urls, MyURLS{ShortURL: url + "/" + key, OriginalURL: element})
+			if uid == element.uid {
+				urls = append(urls, MyURLS{ShortURL: url + "/" + key, OriginalURL: element.value})
+			}
 		}
 	}
 

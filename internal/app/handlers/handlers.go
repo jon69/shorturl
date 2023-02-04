@@ -11,6 +11,9 @@ import (
 	"github.com/jon69/shorturl/internal/app/storage"
 )
 
+type CTXKey struct {
+}
+
 type MyHandler struct {
 	urlstorage *storage.StorageURL
 	baseURL    string
@@ -24,7 +27,7 @@ func MakeMyHandler(baseURL string, filePath string) MyHandler {
 }
 
 func (h MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	//ctx := r.Context()
 
 	id := r.URL.Path[1:]
 	if id == "" {
@@ -35,11 +38,14 @@ func (h MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 	var val string
 	var ok bool
 
-	if v := ctx.Value("uid"); v != nil {
+	/*if v := ctx.Value(CTXKey{}); v != nil {
 		val, ok = h.urlstorage.GetUserURL(fmt.Sprintf("%v", v), id)
 	} else {
 		val, ok = h.urlstorage.GetURL(id)
-	}
+	}*/
+
+	val, ok = h.urlstorage.GetURL(id)
+
 	if ok {
 		log.Print("found value = " + val)
 		w.Header().Set("Location", val)
@@ -56,7 +62,7 @@ func (h MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
 	var urlsJSON []byte
 	var ok bool
 
-	if v := ctx.Value("uid"); v != nil {
+	if v := ctx.Value(CTXKey{}); v != nil {
 		urlsJSON, ok = h.urlstorage.GetUserURLS(fmt.Sprintf("%v", v), h.baseURL)
 	} else {
 		urlsJSON, ok = h.urlstorage.GetURLS(h.baseURL)
@@ -95,11 +101,13 @@ func (h MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Print("url = " + url)
 
 	var id string
-	if v := ctx.Value("uid"); v != nil {
+	if v := ctx.Value(CTXKey{}); v != nil {
 		id = h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url)
 	} else {
 		id = h.urlstorage.PutURL(url)
 	}
+
+	//id = h.urlstorage.PutURL(url)
 
 	w.Header().Set("content-type", "plain/text")
 	w.WriteHeader(http.StatusCreated)
@@ -139,11 +147,13 @@ func (h MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) 
 	log.Print("url = " + url)
 	var mrurl MyResultURL
 
-	if v := ctx.Value("uid"); v != nil {
+	if v := ctx.Value(CTXKey{}); v != nil {
 		mrurl.URL = h.baseURL + "/" + h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url)
 	} else {
 		mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
 	}
+
+	//mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
 
 	txBz, err := json.Marshal(mrurl)
 	if err != nil {

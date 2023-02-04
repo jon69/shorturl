@@ -179,7 +179,7 @@ func authHandle(secretKey []byte, nextFunc http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "uid", uid)
+		ctx = context.WithValue(ctx, handlers.CTXKey{}, uid)
 		nextFunc(w, r.WithContext(ctx))
 	})
 }
