@@ -38,7 +38,7 @@ func CreateIfNotExist(conn string) bool {
 	// если нет, создаем
 	if !exist {
 		log.Println("table does not exist, creating...")
-		queryCreate := "CREATE TABLE public.shorturls (uid bigserial, url bytea)"
+		queryCreate := "CREATE TABLE public.shorturls (uid bigserial, url bytea, originurl text)"
 		_, err = db.Exec(queryCreate)
 		if err != nil {
 			log.Println("Error exec query [" + queryCreate + "]: " + err.Error())
@@ -50,19 +50,25 @@ func CreateIfNotExist(conn string) bool {
 	return true
 }
 
-func InsertURL(conn string, data []byte) bool {
-	db, err := sql.Open("postgres", conn)
-	if err != nil {
-		log.Println("Error connect to db: " + err.Error())
+func InsertURL(conn string, data []byte, originURL string) bool {
+	db, errOpen := sql.Open("postgres", conn)
+	if errOpen != nil {
+		log.Println("Error connect to db: " + errOpen.Error())
 		return false
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO public.shorturls (url) values ($1)", data)
+	res, err := db.Exec("INSERT INTO public.shorturls (url, originurl) values ($1,$2)", data, originURL)
 	if err != nil {
 		log.Println("Error insert value to db: " + err.Error())
 		return false
 	}
+	id, errInsert := res.LastInsertId()
+	if errInsert != nil {
+		log.Println("error lastInsertId: " + errInsert.Error())
+		return false
+	}
+	log.Println("Inserted into db: id=", id)
 	return true
 }
 

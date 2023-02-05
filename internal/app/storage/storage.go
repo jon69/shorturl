@@ -176,7 +176,7 @@ func (h *StorageURL) PutUserURL(uid string, value string) string {
 
 	if h.connDB != "" && errMarshal == nil {
 		log.Println("inserting into db...")
-		if !dbh.InsertURL(h.connDB, data) {
+		if !dbh.InsertURL(h.connDB, data, value) {
 			log.Println("eror insert into db")
 		}
 	}
