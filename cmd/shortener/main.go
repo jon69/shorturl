@@ -16,6 +16,7 @@ func main() {
 	serverAddress := os.Getenv("SERVER_ADDRESS")
 	baseURL := os.Getenv("BASE_URL")
 	filePath := os.Getenv("FILE_STORAGE_PATH")
+	conndb := os.Getenv("DATABASE_DSN")
 
 	log.Print("os FILE_STORAGE_PATH=" + filePath)
 	log.Print("os SERVER_ADDRESS=" + serverAddress)
@@ -30,10 +31,17 @@ func main() {
 	if filePath == "" {
 		flag.StringVar(&filePath, "f", "", "path to file")
 	}
+	if conndb == "" {
+		flag.StringVar(&conndb, "d", "", "connection to database")
+	}
+
 	flag.Parse()
-	log.Print("path to file = " + filePath)
-	log.Print("server address = " + serverAddress)
-	log.Print("base url = " + baseURL)
+
+	serv := server.MakeMyServer()
+	serv.SetBaseURL(baseURL)
+	serv.SetConnDB(conndb)
+	serv.SetFilePath(filePath)
+	serv.SetServerAddr(serverAddress)
 
 	key, err := generateRandom(16)
 	if err != nil {
@@ -41,7 +49,8 @@ func main() {
 		return
 	}
 	log.Println("generated new key")
-	server.RunNetHTTP(serverAddress, baseURL, filePath, key)
+	serv.SetSecretKey(key)
+	serv.RunNetHTTP()
 }
 
 func generateRandom(size int) ([]byte, error) {
@@ -51,6 +60,5 @@ func generateRandom(size int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return b, nil
 }

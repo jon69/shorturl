@@ -21,17 +21,52 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-func RunNetHTTP(serverAddress string, baseURL string, filePath string, key []byte) {
-	handler := handlers.MakeMyHandler(baseURL, filePath)
+type MyServer struct {
+	serverAddress string
+	baseURL       string
+	filePath      string
+	key           []byte
+	conndb        string
+}
 
+func MakeMyServer() MyServer {
+	h := MyServer{}
+	return h
+}
+
+func (h *MyServer) SetServerAddr(str string) {
+	h.serverAddress = str
+	log.Print("server address=" + h.serverAddress)
+}
+func (h *MyServer) SetBaseURL(str string) {
+	h.baseURL = str
+	log.Print("base url=" + h.baseURL)
+}
+func (h *MyServer) SetFilePath(str string) {
+	h.filePath = str
+	log.Print("path to file=" + h.filePath)
+}
+func (h *MyServer) SetSecretKey(b []byte) {
+	h.key = b
+}
+func (h *MyServer) SetConnDB(str string) {
+	h.conndb = str
+	log.Print("connection to db=" + h.conndb)
+}
+
+func (h *MyServer) RunNetHTTP() {
+	handler := handlers.MakeMyHandler(h.filePath)
+	handler.SetBaseURL(h.baseURL)
+	handler.SetConnDB(h.conndb)
 	r := chi.NewRouter()
 
-	r.Get("/{id}", authHandle(key, gzipHandle(handler.ServeGetHTTP)))
-	r.Get("/api/user/urls", authHandle(key, gzipHandle(handler.ServeGetAllURLS)))
-	r.Post("/", authHandle(key, gzipHandle(handler.ServePostHTTP)))
-	r.Post("/api/shorten", authHandle(key, gzipHandle(handler.ServeShortenPostHTTP)))
+	r.Get("/ping", handler.ServeGetPING)
+	r.Get("/{id}", authHandle(h.key, gzipHandle(handler.ServeGetHTTP)))
+	r.Get("/api/user/urls", authHandle(h.key, gzipHandle(handler.ServeGetAllURLS)))
+	r.Post("/", authHandle(h.key, gzipHandle(handler.ServePostHTTP)))
+	r.Post("/api/shorten", authHandle(h.key, gzipHandle(handler.ServeShortenPostHTTP)))
 
-	log.Fatal(http.ListenAndServe(serverAddress, r))
+	log.Fatal(http.ListenAndServe(h.serverAddress, r))
 }
 
 type gzipWriter struct {

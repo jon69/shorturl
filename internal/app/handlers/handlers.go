@@ -8,6 +8,7 @@ import (
 
 	"fmt"
 
+	dbh "github.com/jon69/shorturl/internal/app/db"
 	"github.com/jon69/shorturl/internal/app/storage"
 )
 
@@ -17,16 +18,33 @@ type CTXKey struct {
 type MyHandler struct {
 	urlstorage *storage.StorageURL
 	baseURL    string
+	conndb     string
 }
 
-func MakeMyHandler(baseURL string, filePath string) MyHandler {
+func MakeMyHandler(filePath string) MyHandler {
 	h := MyHandler{}
 	h.urlstorage = storage.NewStorage(filePath)
-	h.baseURL = baseURL
 	return h
 }
 
-func (h MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *MyHandler) SetConnDB(conndb string) {
+	h.conndb = conndb
+}
+
+func (h *MyHandler) SetBaseURL(url string) {
+	h.baseURL = url
+}
+
+func (h *MyHandler) ServeGetPING(w http.ResponseWriter, r *http.Request) {
+	log.Println("ServeGetPING")
+	if dbh.Ping(h.conndb) {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func (h *MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 	//ctx := r.Context()
 
 	id := r.URL.Path[1:]
@@ -56,7 +74,7 @@ func (h MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
+func (h *MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var urlsJSON []byte
@@ -83,7 +101,7 @@ func (h MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
 	w.Write(urlsJSON)
 }
 
-func (h MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// читаем Body
 	b, err := io.ReadAll(r.Body)
@@ -122,7 +140,7 @@ type MyResultURL struct {
 	URL string `json:"result"`
 }
 
-func (h MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// читаем Body
 	b, err := io.ReadAll(r.Body)
