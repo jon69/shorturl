@@ -58,7 +58,7 @@ func InsertURL(conn string, data []byte) bool {
 	}
 	defer db.Close()
 
-	_, err = db.Exec("INSERT INTO public.shorturls (url) vlaues ($1)", data)
+	_, err = db.Exec("INSERT INTO public.shorturls (url) values ($1)", data)
 	if err != nil {
 		log.Println("Error insert value to db: " + err.Error())
 		return false
