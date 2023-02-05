@@ -18,6 +18,7 @@ func Ping(conn string) bool {
 }
 
 func CreateIfNotExist(conn string) bool {
+	log.Println("CreateIfNotExist")
 	db, err := sql.Open("postgres", conn)
 	if err != nil {
 		log.Println("Error connect to db: " + err.Error())
@@ -36,12 +37,15 @@ func CreateIfNotExist(conn string) bool {
 	}
 	// если нет, создаем
 	if !exist {
+		log.Println("table does not exist, creating...")
 		queryCreate := "CREATE TABLE public.shorturls (uid bigserial, url bytea)"
 		_, err = db.Exec(queryCreate)
 		if err != nil {
 			log.Println("Error exec query [" + queryCreate + "]: " + err.Error())
 			return false
 		}
+	} else {
+		log.Println("table exist")
 	}
 	return true
 }
