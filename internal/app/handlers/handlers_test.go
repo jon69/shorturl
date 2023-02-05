@@ -57,7 +57,7 @@ func TestServeHTTP(t *testing.T) {
 			},
 		},
 	}
-	hendl := MakeMyHandler("")
+	hendl := MakeMyHandler("", "")
 	hendl.SetBaseURL("http://localhost:8080")
 
 	for _, tt := range tests {

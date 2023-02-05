@@ -21,14 +21,10 @@ type MyHandler struct {
 	conndb     string
 }
 
-func MakeMyHandler(filePath string) MyHandler {
+func MakeMyHandler(filePath string, conndb string) MyHandler {
 	h := MyHandler{}
-	h.urlstorage = storage.NewStorage(filePath)
+	h.urlstorage = storage.NewStorage(filePath, conndb)
 	return h
-}
-
-func (h *MyHandler) SetConnDB(conndb string) {
-	h.conndb = conndb
 }
 
 func (h *MyHandler) SetBaseURL(url string) {

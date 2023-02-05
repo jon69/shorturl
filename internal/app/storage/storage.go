@@ -8,6 +8,8 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+
+	dbh "github.com/jon69/shorturl/internal/app/db"
 )
 
 type MyPair struct {
@@ -20,14 +22,22 @@ type StorageURL struct {
 	mux      *sync.RWMutex
 	counter  uint64
 	filePath string
+	connDB   string
+	restored bool
 }
 
-func NewStorage(filePath string) *StorageURL {
+func NewStorage(filePath string, conndb string) *StorageURL {
 	s := &StorageURL{}
 	s.mux = &sync.RWMutex{}
 	s.urls = make(map[string]map[string]MyPair)
 	s.counter = 0
 	s.filePath = filePath
+	s.connDB = conndb
+	s.restored = false
+	if conndb != "" {
+		dbh.CreateIfNotExist(conndb)
+	}
+	s.restoreFromDB()
 	s.restoreFromFile()
 	return s
 }
@@ -64,7 +74,41 @@ func max(value1 uint64, value2 uint64) uint64 {
 	return value2
 }
 
+func (h *StorageURL) restoreFromDB() {
+	if h.restored {
+		return
+	}
+	if h.connDB != "" {
+		log.Print("reading urls from db...")
+
+		data, ok := dbh.ReadURLS(h.connDB)
+		if ok {
+			h.restored = true
+			for _, url := range data {
+				event := Event{}
+				err := json.Unmarshal(url, &event)
+				if err == nil {
+					h.counter = max(h.counter, event.Key)
+					keyStr := fmt.Sprint(event.Key)
+					log.Print("user  = " + event.User)
+					log.Print("key   = " + keyStr)
+					log.Print("value = " + event.Value)
+					log.Print("uid   = " + event.UID)
+					h.put(event.User, keyStr, event.Value, event.UID)
+				} else {
+					log.Println("error unmarshal: " + err.Error())
+				}
+			}
+		} else {
+			log.Println("can restore from db")
+		}
+	}
+}
+
 func (h *StorageURL) restoreFromFile() {
+	if h.restored {
+		return
+	}
 	if h.filePath != "" {
 		log.Print("opening file...")
 		file, err := os.OpenFile(h.filePath, os.O_RDONLY|os.O_CREATE, 0777)
@@ -100,14 +144,12 @@ func (h *StorageURL) PutUserURL(uid string, value string) string {
 	var data []byte
 	var errMarshal error
 
-	if h.filePath != "" {
-		event = Event{User: user, Key: key, Value: value, UID: uid}
-		data, errMarshal = json.Marshal(&event)
-		if errMarshal != nil {
-			log.Print("can not json.marshal")
-		} else {
-			data = append(data, '\n')
-		}
+	event = Event{User: user, Key: key, Value: value, UID: uid}
+	data, errMarshal = json.Marshal(&event)
+	if errMarshal != nil {
+		log.Print("can not json.marshal")
+	} else {
+		data = append(data, '\n')
 	}
 
 	h.mux.Lock()
@@ -129,6 +171,13 @@ func (h *StorageURL) PutUserURL(uid string, value string) string {
 			}
 		} else {
 			log.Print("can not open file to write: " + err.Error())
+		}
+	}
+
+	if h.connDB != "" && errMarshal == nil {
+		log.Println("inserting into db...")
+		if !dbh.InsertURL(h.connDB, data) {
+			log.Println("eror insert into db")
 		}
 	}
 	return strKey

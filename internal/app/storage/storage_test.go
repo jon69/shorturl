@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewStorage(t *testing.T) {
-	require.NotNil(t, NewStorage(""))
+	require.NotNil(t, NewStorage("", ""))
 }
 
 func TestPutURL(t *testing.T) {
@@ -29,7 +29,7 @@ func TestPutURL(t *testing.T) {
 		},
 	}
 
-	st := NewStorage("")
+	st := NewStorage("", "")
 	require.NotNil(t, st)
 
 	for _, tt := range tests {
@@ -56,7 +56,7 @@ func TestGetURL(t *testing.T) {
 		},
 	}
 
-	storage := NewStorage("")
+	storage := NewStorage("", "")
 	require.NotNil(t, storage)
 
 	for _, tt := range tests {

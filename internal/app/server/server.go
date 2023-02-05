@@ -55,9 +55,8 @@ func (h *MyServer) SetConnDB(str string) {
 }
 
 func (h *MyServer) RunNetHTTP() {
-	handler := handlers.MakeMyHandler(h.filePath)
+	handler := handlers.MakeMyHandler(h.filePath, h.conndb)
 	handler.SetBaseURL(h.baseURL)
-	handler.SetConnDB(h.conndb)
 	r := chi.NewRouter()
 
 	r.Get("/ping", handler.ServeGetPING)
