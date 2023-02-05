@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"log"
 
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx"
 )
 
 func Ping(conn string) bool {

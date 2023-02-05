@@ -57,7 +57,8 @@ func TestServeHTTP(t *testing.T) {
 			},
 		},
 	}
-	hendl := MakeMyHandler("http://localhost:8080", "")
+	hendl := MakeMyHandler("")
+	hendl.SetBaseURL("http://localhost:8080")
 
 	for _, tt := range tests {
 		request := httptest.NewRequest(tt.req.method, tt.req.url, strings.NewReader(tt.req.body))
