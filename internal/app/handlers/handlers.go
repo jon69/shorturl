@@ -180,3 +180,59 @@ func (h *MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(txBz)
 }
+
+type MyBatchURL struct {
+	OriginalURL   string `json:"original_url"`
+	CorrelationID string `json:"correlation_id"`
+}
+
+type MyBatchResultURL struct {
+	ShortURL      string `json:"short_url"`
+	CorrelationID string `json:"correlation_id"`
+}
+
+func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	// читаем Body
+	b, err := io.ReadAll(r.Body)
+	// обрабатываем ошибку
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var murls []MyBatchURL
+	if err := json.Unmarshal(b, &murls); err != nil {
+		log.Print("Unmarshal batch fail ", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var mrurls []MyBatchResultURL
+	for _, url := range murls {
+		log.Println("received original_url=" + url.OriginalURL + " with correlation_id=" + url.CorrelationID)
+		if url.OriginalURL == "" {
+			http.Error(w, "empty original_url in body", http.StatusBadRequest)
+			return
+		}
+		var mrurl MyBatchResultURL
+		mrurl.CorrelationID = url.CorrelationID
+		if v := ctx.Value(CTXKey{}); v != nil {
+			mrurl.ShortURL = h.baseURL + "/" + h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url.OriginalURL)
+		} else {
+			mrurl.ShortURL = h.baseURL + "/" + h.urlstorage.PutURL(url.OriginalURL)
+		}
+		mrurls = append(mrurls, mrurl)
+	}
+	//mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
+
+	txBz, err := json.Marshal(mrurls)
+	if err != nil {
+		log.Print("Marshal batch urls fail ", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(txBz)
+}

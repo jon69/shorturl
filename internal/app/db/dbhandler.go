@@ -58,17 +58,12 @@ func InsertURL(conn string, data []byte, originURL string) bool {
 	}
 	defer db.Close()
 
-	res, err := db.Exec("INSERT INTO public.shorturls (url, originurl) values ($1,$2)", data, originURL)
+	_, err := db.Exec("INSERT INTO public.shorturls (url, originurl) values ($1,$2)", data, originURL)
 	if err != nil {
 		log.Println("Error insert value to db: " + err.Error())
 		return false
 	}
-	id, errInsert := res.LastInsertId()
-	if errInsert != nil {
-		log.Println("error lastInsertId: " + errInsert.Error())
-		return false
-	}
-	log.Println("Inserted into db: id=", id)
+	log.Println("Inserted into db")
 	return true
 }
 

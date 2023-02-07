@@ -64,6 +64,7 @@ func (h *MyServer) RunNetHTTP() {
 	r.Get("/api/user/urls", authHandle(h.key, gzipHandle(handler.ServeGetAllURLS)))
 	r.Post("/", authHandle(h.key, gzipHandle(handler.ServePostHTTP)))
 	r.Post("/api/shorten", authHandle(h.key, gzipHandle(handler.ServeShortenPostHTTP)))
+	r.Post("/api/shorten/batch", authHandle(h.key, gzipHandle(handler.ServeShortenPostBatchHTTP)))
 
 	log.Fatal(http.ListenAndServe(h.serverAddress, r))
 }
