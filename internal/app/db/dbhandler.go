@@ -38,7 +38,7 @@ func CreateIfNotExist(conn string) bool {
 	// если нет, создаем
 	if !exist {
 		log.Println("table does not exist, creating...")
-		queryCreate := "CREATE TABLE public.shorturls (uid bigserial, url bytea, originurl text)"
+		queryCreate := "CREATE TABLE public.shorturls (uid bigserial, url bytea, originurl text unique, shorturl text)"
 		_, err = db.Exec(queryCreate)
 		if err != nil {
 			log.Println("Error exec query [" + queryCreate + "]: " + err.Error())
@@ -50,21 +50,40 @@ func CreateIfNotExist(conn string) bool {
 	return true
 }
 
-func InsertURL(conn string, data []byte, originURL string) bool {
+func InsertURL(conn string, data []byte, originURL string, shortURL string) (bool, int, string) {
 	db, errOpen := sql.Open("postgres", conn)
 	if errOpen != nil {
 		log.Println("Error connect to db: " + errOpen.Error())
-		return false
+		return false, 1, ""
 	}
 	defer db.Close()
 
-	_, err := db.Exec("INSERT INTO public.shorturls (url, originurl) values ($1,$2)", data, originURL)
+	insertOrUpdateQuery := `"WITH e AS(
+								INSERT INTO public.shorturls (url, originurl, shorturl) 
+									VALUES ($1,$2,$3)
+								ON CONFLICT(originurl) DO NOTHING
+								RETURNING 1, id, shorturl
+							)
+							SELECT * FROM e
+							UNION
+								SELECT 2, id, shorturl FROM public.shorturls WHERE originurl=$2`
+
+	var iou int
+	var id int64
+	var su string
+	row := db.QueryRow(insertOrUpdateQuery, data, originURL, shortURL)
+	err := row.Scan(&iou, &id, su)
 	if err != nil {
-		log.Println("Error insert value to db: " + err.Error())
-		return false
+		log.Println("error readin from insert row: " + err.Error())
+		return false, 1, su
 	}
-	log.Println("Inserted into db")
-	return true
+
+	if iou == 1 {
+		log.Println("Inserted new into db: " + originURL)
+	} else {
+		log.Println("exist in db: " + originURL)
+	}
+	return true, iou, su
 }
 
 func ReadURLS(conn string) ([][]byte, bool) {

@@ -152,13 +152,27 @@ func (h *StorageURL) PutUserURL(uid string, value string) string {
 		data = append(data, '\n')
 	}
 
+	strKey := fmt.Sprint(key)
+
 	h.mux.Lock()
 	defer h.mux.Unlock()
 
-	strKey := fmt.Sprint(key)
+	iou := 1
+	if h.connDB != "" && errMarshal == nil {
+		log.Println("inserting into db...")
+		var ok bool
+		var su string
+		ok, iou, su = dbh.InsertURL(h.connDB, data, value, strKey)
+		if !ok {
+			log.Println("eror insert into db")
+		} else {
+			strKey = su
+		}
+	}
+
 	h.put(user, strKey, value, uid)
 
-	if h.filePath != "" && errMarshal == nil {
+	if h.filePath != "" && errMarshal == nil && iou == 1 {
 		log.Print("opening file...")
 		file, err := os.OpenFile(h.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 		if err == nil {
@@ -174,12 +188,6 @@ func (h *StorageURL) PutUserURL(uid string, value string) string {
 		}
 	}
 
-	if h.connDB != "" && errMarshal == nil {
-		log.Println("inserting into db...")
-		if !dbh.InsertURL(h.connDB, data, value) {
-			log.Println("eror insert into db")
-		}
-	}
 	return strKey
 }
 
