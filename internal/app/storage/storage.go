@@ -188,7 +188,7 @@ func (h *StorageURL) PutUserURL(uid string, value string) (int, string) {
 		}
 	}
 
-	return strKey
+	return iou, strKey
 }
 
 func (h *StorageURL) GetUserURL(uid string, id string) (string, bool) {
