@@ -62,11 +62,11 @@ func InsertURL(conn string, data []byte, originURL string, shortURL string) (boo
 								INSERT INTO public.shorturls (url, originurl, shorturl) 
 									VALUES ($1,$2,$3)
 								ON CONFLICT(originurl) DO NOTHING
-								RETURNING 1, id, shorturl
+								RETURNING 1, uid, shorturl
 							)
 							SELECT * FROM e
 							UNION
-								SELECT 2, id, shorturl FROM public.shorturls WHERE originurl=$2`
+								SELECT 2, uid, shorturl FROM public.shorturls WHERE originurl=$2`
 
 	var iou int
 	var id int64
