@@ -58,7 +58,7 @@ func InsertURL(conn string, data []byte, originURL string, shortURL string) (boo
 	}
 	defer db.Close()
 
-	insertOrUpdateQuery := `"WITH e AS(
+	insertOrUpdateQuery := `WITH e AS(
 								INSERT INTO public.shorturls (url, originurl, shorturl) 
 									VALUES ($1,$2,$3)
 								ON CONFLICT(originurl) DO NOTHING
