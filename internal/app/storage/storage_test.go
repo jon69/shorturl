@@ -33,7 +33,7 @@ func TestPutURL(t *testing.T) {
 	require.NotNil(t, st)
 
 	for _, tt := range tests {
-		val := st.PutURL(tt.value)
+		_, val := st.PutURL(tt.value)
 		assert.Equal(t, tt.want, val)
 	}
 }
@@ -60,7 +60,7 @@ func TestGetURL(t *testing.T) {
 	require.NotNil(t, storage)
 
 	for _, tt := range tests {
-		v := storage.PutURL(tt.value)
+		_, v := storage.PutURL(tt.value)
 		assert.Equal(t, tt.want, v)
 
 		url, ok := storage.GetURL(tt.want)

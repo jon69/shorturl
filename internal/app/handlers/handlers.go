@@ -115,16 +115,22 @@ func (h *MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Print("url = " + url)
 
 	var id string
+	var iou int
 	if v := ctx.Value(CTXKey{}); v != nil {
-		id = h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url)
+		iou, id = h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url)
 	} else {
-		id = h.urlstorage.PutURL(url)
+		iou, id = h.urlstorage.PutURL(url)
 	}
 
 	//id = h.urlstorage.PutURL(url)
 
 	w.Header().Set("content-type", "plain/text")
-	w.WriteHeader(http.StatusCreated)
+	if iou == 1 {
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusConflict)
+	}
+
 	w.Write([]byte(h.baseURL + "/" + id))
 }
 
@@ -161,11 +167,14 @@ func (h *MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request)
 	log.Print("url = " + url)
 	var mrurl MyResultURL
 
+	var iou int
+	var shortURL string
 	if v := ctx.Value(CTXKey{}); v != nil {
-		mrurl.URL = h.baseURL + "/" + h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url)
+		iou, shortURL = h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url)
 	} else {
-		mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
+		iou, shortURL = h.urlstorage.PutURL(url)
 	}
+	mrurl.URL = h.baseURL + "/" + shortURL
 
 	//mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
 
@@ -177,7 +186,11 @@ func (h *MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	if iou == 1 {
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusConflict)
+	}
 	w.Write(txBz)
 }
 
@@ -207,6 +220,8 @@ func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	var iou int
+	iou = 1
 	var mrurls []MyBatchResultURL
 	for _, url := range murls {
 		log.Println("received original_url=" + url.OriginalURL + " with correlation_id=" + url.CorrelationID)
@@ -216,11 +231,18 @@ func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Req
 		}
 		var mrurl MyBatchResultURL
 		mrurl.CorrelationID = url.CorrelationID
+
+		var iouLocal int
+		var shortURL string
 		if v := ctx.Value(CTXKey{}); v != nil {
-			mrurl.ShortURL = h.baseURL + "/" + h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url.OriginalURL)
+			iouLocal, shortURL = h.urlstorage.PutUserURL(fmt.Sprintf("%v", v), url.OriginalURL)
 		} else {
-			mrurl.ShortURL = h.baseURL + "/" + h.urlstorage.PutURL(url.OriginalURL)
+			iouLocal, shortURL = h.urlstorage.PutURL(url.OriginalURL)
 		}
+		if iou != 2 && iouLocal == 2 {
+			iou = 2
+		}
+		mrurl.ShortURL = h.baseURL + "/" + shortURL
 		mrurls = append(mrurls, mrurl)
 	}
 	//mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
@@ -233,6 +255,10 @@ func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	if iou == 1 {
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusConflict)
+	}
 	w.Write(txBz)
 }

@@ -67,12 +67,11 @@ func InsertURL(conn string, data []byte, originURL string, shortURL string) (boo
 							SELECT * FROM e
 							UNION
 								SELECT 2, uid, shorturl FROM public.shorturls WHERE originurl=$2`
-
 	var iou int
 	var id int64
 	var su string
 	row := db.QueryRow(insertOrUpdateQuery, data, originURL, shortURL)
-	err := row.Scan(&iou, &id, su)
+	err := row.Scan(&iou, &id, &su)
 	if err != nil {
 		log.Println("error readin from insert row: " + err.Error())
 		return false, 1, su

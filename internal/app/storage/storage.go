@@ -135,7 +135,7 @@ func (h *StorageURL) restoreFromFile() {
 	}
 }
 
-func (h *StorageURL) PutUserURL(uid string, value string) string {
+func (h *StorageURL) PutUserURL(uid string, value string) (int, string) {
 	user := "1"
 	log.Print("StorageURL.PutURL user=", user)
 	key := h.getNewID()
@@ -243,7 +243,7 @@ func (h *StorageURL) GetUserURLS(uid string, url string) ([]byte, bool) {
 	return urlsJSON, retOK
 }
 
-func (h *StorageURL) PutURL(value string) string {
+func (h *StorageURL) PutURL(value string) (int, string) {
 	return h.PutUserURL("1", value)
 }
 
