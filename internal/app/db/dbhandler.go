@@ -38,7 +38,7 @@ func CreateIfNotExist(conn string) bool {
 	// если нет, создаем
 	if !exist {
 		log.Println("table does not exist, creating...")
-		queryCreate := "CREATE TABLE public.shorturls (uid bigserial, url bytea, originurl text unique, shorturl text)"
+		queryCreate := "CREATE TABLE public.shorturls (uid bigserial, url bytea, originurl text unique, shorturl text, del boolean default false)"
 		_, err = db.Exec(queryCreate)
 		if err != nil {
 			log.Println("Error exec query [" + queryCreate + "]: " + err.Error())
@@ -85,16 +85,39 @@ func InsertURL(conn string, data []byte, originURL string, shortURL string) (boo
 	return true, iou, su
 }
 
-func ReadURLS(conn string) ([][]byte, bool) {
-	var ret [][]byte
+func DeleteURL(conn string, shortURL string) bool {
 	db, errOpen := sql.Open("postgres", conn)
 	if errOpen != nil {
-		log.Println("Error connect to db: " + errOpen.Error())
+		log.Println("DelUserURL | Error connect to db: " + errOpen.Error())
+		return false
+	}
+	defer db.Close()
+
+	queryDel := `UPDATE public.shorturls SET del=true WHERE shorturl=$1`
+
+	_, err := db.Exec(queryDel, shortURL)
+	if err != nil {
+		log.Println("DelUserURL | Error exec query [" + queryDel + "]: " + err.Error())
+		return false
+	}
+	return true
+}
+
+type URLFromDB struct {
+	DumpJsonURL []byte
+	Deleted     bool
+}
+
+func ReadURLS(conn string) ([]URLFromDB, bool) {
+	var ret []URLFromDB
+	db, errOpen := sql.Open("postgres", conn)
+	if errOpen != nil {
+		log.Println("ReadURLS Error connect to db: " + errOpen.Error())
 		return ret, false
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT url from public.shorturls")
+	rows, err := db.Query("SELECT url, del from public.shorturls")
 	if err != nil {
 		log.Println("Error select url: " + err.Error())
 		return ret, false
@@ -105,13 +128,13 @@ func ReadURLS(conn string) ([][]byte, bool) {
 
 	// пробегаем по всем записям
 	for rows.Next() {
-		var shortURL []byte
-		err = rows.Scan(&shortURL)
+		var v URLFromDB
+		err = rows.Scan(&v.DumpJsonURL, &v.Deleted)
 		if err != nil {
 			log.Println("Error rows.Scan: " + err.Error())
 			return ret, false
 		}
-		ret = append(ret, shortURL)
+		ret = append(ret, v)
 	}
 	// проверяем на ошибки
 	err = rows.Err()

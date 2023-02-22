@@ -58,12 +58,17 @@ func (h *MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 		val, ok = h.urlstorage.GetURL(id)
 	}*/
 
-	val, ok = h.urlstorage.GetURL(id)
+	var isDel bool
+	val, ok, isDel = h.urlstorage.GetURL(id)
 
 	if ok {
 		log.Print("found value = " + val)
-		w.Header().Set("Location", val)
-		w.WriteHeader(http.StatusTemporaryRedirect)
+		if isDel {
+			w.WriteHeader(http.StatusGone)
+		} else {
+			w.Header().Set("Location", val)
+			w.WriteHeader(http.StatusTemporaryRedirect)
+		}
 	} else {
 		log.Print("not found id " + id)
 		http.Error(w, "not found "+id, http.StatusNotFound)
@@ -261,4 +266,51 @@ func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Req
 		w.WriteHeader(http.StatusConflict)
 	}
 	w.Write(txBz)
+}
+
+type MyURLS []string
+
+func (h *MyHandler) ServeDeleteBatchHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	// читаем Body
+	b, err := io.ReadAll(r.Body)
+	// обрабатываем ошибку
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var urls MyURLS
+	if err := json.Unmarshal(b, &urls); err != nil {
+		log.Print("while serve delete unmarshal url fail ", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var accepted bool
+	accepted = true
+
+	for _, url := range urls {
+		log.Println("deleting url=" + url)
+		if url == "" {
+			http.Error(w, "empty url", http.StatusBadRequest)
+			return
+		}
+		if v := ctx.Value(CTXKey{}); v != nil {
+			if !h.urlstorage.DelUserURL(fmt.Sprintf("%v", v), url) {
+				accepted = false
+				log.Println("can not delete url=", url)
+			}
+		} else {
+			if !h.urlstorage.DelURL(url) {
+				accepted = false
+				log.Println("can not delete url=", url)
+			}
+		}
+	}
+	if accepted {
+		w.WriteHeader(http.StatusAccepted)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
