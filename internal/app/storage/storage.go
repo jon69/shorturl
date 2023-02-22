@@ -57,11 +57,13 @@ func (h *StorageURL) del(user string, key string, u string) (bool, string, uint6
 	if !ok {
 		return false, "", 0
 	}
-	_, ok2 := h.urls[user][key]
+	entry, ok2 := h.urls[user][key]
 	if !ok2 {
 		return false, "", 0
 	}
-	return true, h.urls[user][key].value, h.urls[user][key].uidI
+	entry.deleted = true
+	h.urls[user][key] = entry
+	return true, entry.value, entry.uidI
 }
 
 func (h *StorageURL) getNewID() uint64 {
@@ -104,7 +106,7 @@ func (h *StorageURL) restoreFromDB() {
 			maxKey = 0
 			for _, url := range data {
 				event := EventDel{}
-				err := json.Unmarshal(url.DumpJsonURL, &event)
+				err := json.Unmarshal(url.DumpJSONURL, &event)
 				event.DEL = url.Deleted
 				if err == nil {
 					maxKey = max(maxKey, event.Key)
@@ -249,8 +251,7 @@ func (h *StorageURL) DelUserURL(uid string, strKey string) bool {
 
 	if h.connDB != "" && errMarshal == nil {
 		log.Println("deleting into db...")
-		var ok bool
-		ok = dbh.DeleteURL(h.connDB, strKey)
+		ok := dbh.DeleteURL(h.connDB, strKey)
 		if !ok {
 			log.Println("eror delete into db")
 			return false

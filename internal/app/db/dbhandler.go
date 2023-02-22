@@ -104,7 +104,7 @@ func DeleteURL(conn string, shortURL string) bool {
 }
 
 type URLFromDB struct {
-	DumpJsonURL []byte
+	DumpJSONURL []byte
 	Deleted     bool
 }
 
@@ -129,7 +129,7 @@ func ReadURLS(conn string) ([]URLFromDB, bool) {
 	// пробегаем по всем записям
 	for rows.Next() {
 		var v URLFromDB
-		err = rows.Scan(&v.DumpJsonURL, &v.Deleted)
+		err = rows.Scan(&v.DumpJSONURL, &v.Deleted)
 		if err != nil {
 			log.Println("Error rows.Scan: " + err.Error())
 			return ret, false
