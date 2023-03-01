@@ -41,7 +41,6 @@ func (h *MyHandler) ServeGetPING(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
-	//ctx := r.Context()
 
 	id := r.URL.Path[1:]
 	if id == "" {
@@ -51,12 +50,6 @@ func (h *MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Print("parsed id = " + id)
 	var val string
 	var ok bool
-
-	/*if v := ctx.Value(CTXKey{}); v != nil {
-		val, ok = h.urlstorage.GetUserURL(fmt.Sprintf("%v", v), id)
-	} else {
-		val, ok = h.urlstorage.GetURL(id)
-	}*/
 
 	var isDel bool
 	val, ok, isDel = h.urlstorage.GetURL(id)
@@ -181,8 +174,6 @@ func (h *MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request)
 	}
 	mrurl.URL = h.baseURL + "/" + shortURL
 
-	//mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
-
 	txBz, err := json.Marshal(mrurl)
 	if err != nil {
 		log.Print("Marshal fail ", err.Error())
@@ -250,7 +241,6 @@ func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Req
 		mrurl.ShortURL = h.baseURL + "/" + shortURL
 		mrurls = append(mrurls, mrurl)
 	}
-	//mrurl.URL = h.baseURL + "/" + h.urlstorage.PutURL(url)
 
 	txBz, err := json.Marshal(mrurls)
 	if err != nil {

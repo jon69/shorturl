@@ -229,51 +229,52 @@ func (h *StorageURL) DelUserURL(uid string, strKey string) bool {
 	user := "1"
 	log.Print("StorageURL.DelUserURL user=", user)
 
-	var data []byte
-	var errMarshal error
+	go func() {
 
-	h.mux.Lock()
-	defer h.mux.Unlock()
+		var data []byte
+		var errMarshal error
 
-	ok, value, key := h.del(user, strKey, uid)
-	if !ok {
-		log.Print("err DelUserURL can not find uid=" + uid + " strKey=" + strKey)
-		return false
-	}
+		h.mux.Lock()
+		defer h.mux.Unlock()
 
-	event := EventDel{User: user, Key: key, Value: value, UID: uid, DEL: true}
-	data, errMarshal = json.Marshal(&event)
-	if errMarshal != nil {
-		log.Print("can not json.marshal")
-	} else {
-		data = append(data, '\n')
-	}
-
-	if h.connDB != "" && errMarshal == nil {
-		log.Println("deleting into db...")
-		ok := dbh.DeleteURL(h.connDB, strKey)
+		ok, value, key := h.del(user, strKey, uid)
 		if !ok {
-			log.Println("eror delete into db")
-			return false
+			log.Print("err DelUserURL can not find uid=" + uid + " strKey=" + strKey)
+			return
 		}
-	}
 
-	if h.filePath != "" && errMarshal == nil {
-		log.Print("opening file...")
-		file, err := os.OpenFile(h.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
-		if err == nil {
-			defer file.Close()
-			log.Print("writing to file...")
-			log.Print(data)
-			_, err = file.Write(data)
-			if err != nil {
-				log.Print("can not write to file")
-			}
+		event := EventDel{User: user, Key: key, Value: value, UID: uid, DEL: true}
+		data, errMarshal = json.Marshal(&event)
+		if errMarshal != nil {
+			log.Print("can not json.marshal")
 		} else {
-			log.Print("can not open file to write: " + err.Error())
-			return false
+			data = append(data, '\n')
 		}
-	}
+		if h.connDB != "" && errMarshal == nil {
+			log.Println("deleting into db...")
+			ok := dbh.DeleteURL(h.connDB, strKey)
+			if !ok {
+				log.Println("eror delete into db")
+				return
+			}
+		}
+		if h.filePath != "" && errMarshal == nil {
+			log.Print("opening file...")
+			file, err := os.OpenFile(h.filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+			if err == nil {
+				defer file.Close()
+				log.Print("writing to file...")
+				log.Print(data)
+				_, err = file.Write(data)
+				if err != nil {
+					log.Print("can not write to file")
+				}
+			} else {
+				log.Print("can not open file to write: " + err.Error())
+				return
+			}
+		}
+	}()
 
 	return true
 }
