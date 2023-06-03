@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -67,5 +68,13 @@ func TestGetURL(t *testing.T) {
 		assert.Equal(t, ok, true)
 		assert.Equal(t, deleted, false)
 		assert.Equal(t, url, tt.value)
+	}
+}
+
+func BenchmarkGetURL(b *testing.B) {
+	storage := NewStorage("", "")
+	for i := 0; i < b.N; i++ {
+		s := fmt.Sprintf("http://%s_%d.ru", "yandex", i)
+		storage.PutURL(s)
 	}
 }
