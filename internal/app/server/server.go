@@ -67,6 +67,7 @@ func (h *MyServer) RunNetHTTP() {
 	r.Post("/", authHandle(h.key, gzipHandle(handler.ServePostHTTP)))
 	r.Post("/api/shorten", authHandle(h.key, gzipHandle(handler.ServeShortenPostHTTP)))
 	r.Post("/api/shorten/batch", authHandle(h.key, gzipHandle(handler.ServeShortenPostBatchHTTP)))
+	r.Delete("/api/user/urls", authHandle(h.key, gzipHandle(handler.ServeDeleteBatchHTTP)))
 
 	// только для pprof приходится запустить отдельный сервер
 	go func() {
