@@ -19,6 +19,8 @@ import (
 	"crypto/sha256"
 
 	uuid "github.com/satori/go.uuid"
+
+	_ "net/http/pprof" // подключаем пакет pprof
 )
 
 type MyServer struct {
@@ -65,6 +67,11 @@ func (h *MyServer) RunNetHTTP() {
 	r.Post("/", authHandle(h.key, gzipHandle(handler.ServePostHTTP)))
 	r.Post("/api/shorten", authHandle(h.key, gzipHandle(handler.ServeShortenPostHTTP)))
 	r.Post("/api/shorten/batch", authHandle(h.key, gzipHandle(handler.ServeShortenPostBatchHTTP)))
+
+	// только для pprof приходится запустить отдельный сервер
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
 
 	log.Fatal(http.ListenAndServe(h.serverAddress, r))
 }
