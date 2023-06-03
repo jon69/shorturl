@@ -63,8 +63,9 @@ func TestGetURL(t *testing.T) {
 		_, v := storage.PutURL(tt.value)
 		assert.Equal(t, tt.want, v)
 
-		url, ok := storage.GetURL(tt.want)
+		url, ok, deleted := storage.GetURL(tt.want)
 		assert.Equal(t, ok, true)
+		assert.Equal(t, deleted, false)
 		assert.Equal(t, url, tt.value)
 	}
 }
