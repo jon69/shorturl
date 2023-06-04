@@ -100,6 +100,7 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+// Write записывает данные в сжатом формате
 func (w gzipWriter) Write(b []byte) (int, error) {
 	// w.Writer будет отвечать за gzip-сжатие, поэтому пишем в него
 	log.Print("compressing data...", b)

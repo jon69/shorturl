@@ -13,19 +13,31 @@ import (
 	dbh "github.com/jon69/shorturl/internal/app/db"
 )
 
+// MyDelPair храние информацию о URL для удаления.
 type MyDelPair struct {
-	uid     string
-	value   string
+	// uid - идентификатор.
+	uid string
+	// value - значение.
+	value string
+	// deleted - признак удаления.
 	deleted bool
-	uidI    uint64
+	// uid - идентификатор.
+	uidI uint64
 }
 
+// StorageURL хранилище URL.
 type StorageURL struct {
-	urls     map[string]map[string]MyDelPair
-	mux      *sync.RWMutex
-	counter  uint64
+	// urls - множество URL.
+	urls map[string]map[string]MyDelPair
+	// mux - мьютекс для синхронизации.
+	mux *sync.RWMutex
+	// counter - счетчик всех URL.
+	counter uint64
+	// filePath - путь к фалу для хранения URL.
 	filePath string
-	connDB   string
+	// connDB - параметры подключения к БД.
+	connDB string
+	// restored - признак восстановления.
 	restored bool
 }
 
@@ -78,12 +90,18 @@ func (h *StorageURL) getNewID() uint64 {
 	}
 }
 
+// EventDel храние информацию о удаляемых URL.
 type EventDel struct {
-	User  string `json:"user"`
-	Key   uint64 `json:"key"`
+	// User - идентификатор пользователя.
+	User string `json:"user"`
+	// Key - ключ.
+	Key uint64 `json:"key"`
+	// Value - удаляемое значение.
 	Value string `json:"value"`
-	UID   string `json:"uid"`
-	DEL   bool   `json:"del"`
+	// UID - индентификатор.
+	UID string `json:"uid"`
+	// DEL - признак удаления.
+	DEL bool `json:"del"`
 }
 
 func max(value1 uint64, value2 uint64) uint64 {

@@ -13,6 +13,7 @@ import (
 	"github.com/jon69/shorturl/internal/app/storage"
 )
 
+// CTXKey структура для хранения конекста HTTP запроса с информацией о польльзователе.
 type CTXKey struct {
 }
 
@@ -278,6 +279,7 @@ func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Req
 	w.Write(txBz)
 }
 
+// MyURLS тип для представлние множетсва URL.
 type MyURLS []string
 
 // ServeDeleteBatchHTTP обрабатывает DELETE запрос на удаление можества URL в формате JSON.
