@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,4 +78,12 @@ func BenchmarkGetURL(b *testing.B) {
 		s := fmt.Sprintf("http://%s_%d.ru", "yandex", i)
 		storage.PutURL(s)
 	}
+}
+
+func Example() {
+	// создаем экземпляр хранилища
+	storage := NewStorage("", "")
+	_, id := storage.PutURL("http://yandex.ru")
+	url, _, _ := storage.GetURL(id)
+	log.Print(fmt.Sprintf("url = %s", url))
 }

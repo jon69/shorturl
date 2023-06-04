@@ -1,3 +1,4 @@
+// Модуль storage хранит информацию о URL.
 package storage
 
 import (
@@ -28,6 +29,7 @@ type StorageURL struct {
 	restored bool
 }
 
+// NewStorage создает новое хранилище.
 func NewStorage(filePath string, conndb string) *StorageURL {
 	s := &StorageURL{}
 	s.mux = &sync.RWMutex{}
@@ -170,6 +172,7 @@ func (h *StorageURL) restoreFromFile() {
 	}
 }
 
+// PutUserURL сохраняет URL в хранилище.
 func (h *StorageURL) PutUserURL(uid string, value string) (int, string) {
 	user := "1"
 	log.Print("StorageURL.PutURL user=", user)
@@ -225,6 +228,7 @@ func (h *StorageURL) PutUserURL(uid string, value string) (int, string) {
 	return iou, strKey
 }
 
+// DelUserURL удаляет URL из хранилища.
 func (h *StorageURL) DelUserURL(uid string, strKey string) bool {
 	user := "1"
 	log.Print("StorageURL.DelUserURL user=", user)
@@ -279,6 +283,7 @@ func (h *StorageURL) DelUserURL(uid string, strKey string) bool {
 	return true
 }
 
+// GetUserURL возвращает URL из хранилища на основе идентификатора.
 func (h *StorageURL) GetUserURL(uid string, id string) (string, bool, bool) {
 	user := "1"
 	log.Print("StorageURL.GetURL user=", user)
@@ -295,11 +300,15 @@ func (h *StorageURL) GetUserURL(uid string, id string) (string, bool, bool) {
 	return val.value, ok, val.deleted
 }
 
+// MyURLS представляет информацию о URL
 type MyURLS struct {
-	ShortURL    string `json:"short_url"`
+	// ShortURL - краткая форма URL
+	ShortURL string `json:"short_url"`
+	// OriginalURL - исходная длинная форма URL
 	OriginalURL string `json:"original_url"`
 }
 
+// GetUserURLS возвращает множество URL из хранилища.
 func (h *StorageURL) GetUserURLS(uid string, url string) ([]byte, bool) {
 	user := "1"
 	log.Print("StorageURL.GetURLS user=", user)
@@ -331,18 +340,22 @@ func (h *StorageURL) GetUserURLS(uid string, url string) ([]byte, bool) {
 	return urlsJSON, retOK
 }
 
+// PutURL сохраняет URL в хранилище.
 func (h *StorageURL) PutURL(value string) (int, string) {
 	return h.PutUserURL("1", value)
 }
 
+// GetURL возвращает URL из хранилища.
 func (h *StorageURL) GetURL(id string) (string, bool, bool) {
 	return h.GetUserURL("1", id)
 }
 
+// DelURL удаляет URL из хранилища.
 func (h *StorageURL) DelURL(id string) bool {
 	return h.DelUserURL("1", id)
 }
 
+// GetURLS возвращает множества URL из хранилища.
 func (h *StorageURL) GetURLS(url string) ([]byte, bool) {
 	return h.GetUserURLS("1", url)
 }
