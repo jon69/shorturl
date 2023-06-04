@@ -85,5 +85,5 @@ func Example() {
 	storage := NewStorage("", "")
 	_, id := storage.PutURL("http://yandex.ru")
 	url, _, _ := storage.GetURL(id)
-	log.Print(fmt.Sprintf("url = %s", url))
+	log.Printf("url = %s", url)
 }
