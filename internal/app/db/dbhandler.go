@@ -1,3 +1,4 @@
+// Модуль dbh позволяет работать с БД.
 package dbh
 
 import (
@@ -7,6 +8,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Ping проверяет есть ли подключение к БД.
 func Ping(conn string) bool {
 	db, err := sql.Open("postgres", conn)
 	if err != nil {
@@ -17,6 +19,7 @@ func Ping(conn string) bool {
 	return true
 }
 
+// CreateIfNotExist создает структуру в БД, если ее там еще нет.
 func CreateIfNotExist(conn string) bool {
 	log.Println("CreateIfNotExist")
 	db, err := sql.Open("postgres", conn)
@@ -50,6 +53,7 @@ func CreateIfNotExist(conn string) bool {
 	return true
 }
 
+// InsertURL добавляет в БД запись с информацией о URL.
 func InsertURL(conn string, data []byte, originURL string, shortURL string) (bool, int, string) {
 	db, errOpen := sql.Open("postgres", conn)
 	if errOpen != nil {
@@ -85,6 +89,7 @@ func InsertURL(conn string, data []byte, originURL string, shortURL string) (boo
 	return true, iou, su
 }
 
+// DeleteURL удаляет из БД запись с информацией о URL.
 func DeleteURL(conn string, shortURL string) bool {
 	db, errOpen := sql.Open("postgres", conn)
 	if errOpen != nil {
@@ -103,11 +108,15 @@ func DeleteURL(conn string, shortURL string) bool {
 	return true
 }
 
+// URLFromDB хранит информацию о URL считанную из БД.
 type URLFromDB struct {
+	// DumpJSONURL - URL в формате JSON
 	DumpJSONURL []byte
-	Deleted     bool
+	// Deleted - была ли запись удалена.
+	Deleted bool
 }
 
+// ReadURLS считывает из БД записи с информацией о URL.
 func ReadURLS(conn string) ([]URLFromDB, bool) {
 	var ret []URLFromDB
 	db, errOpen := sql.Open("postgres", conn)

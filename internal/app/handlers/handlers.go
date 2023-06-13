@@ -1,3 +1,4 @@
+// Модуль handlers осуществляет обработку конкретных HTTP запросов.
 package handlers
 
 import (
@@ -12,25 +13,30 @@ import (
 	"github.com/jon69/shorturl/internal/app/storage"
 )
 
+// CTXKey структура для хранения конекста HTTP запроса с информацией о польльзователе.
 type CTXKey struct {
 }
 
+// MyHandler хранит информацию об обработчике.
 type MyHandler struct {
 	urlstorage *storage.StorageURL
 	baseURL    string
 	conndb     string
 }
 
+// MyHandler созает новый обработчик.
 func MakeMyHandler(filePath string, conndb string) MyHandler {
 	h := MyHandler{}
 	h.urlstorage = storage.NewStorage(filePath, conndb)
 	return h
 }
 
+// SetBaseURL устанавливает новое значение адреса запуска сервера обработки HTTP запросов.
 func (h *MyHandler) SetBaseURL(url string) {
 	h.baseURL = url
 }
 
+// ServeGetPING обрабатывает запрос на проверку подключения к БДServeGetPING
 func (h *MyHandler) ServeGetPING(w http.ResponseWriter, r *http.Request) {
 	log.Println("ServeGetPING")
 	if dbh.Ping(h.conndb) {
@@ -40,6 +46,7 @@ func (h *MyHandler) ServeGetPING(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ServeGetHTTP обрабатывает GET запрос за получение полного URL по его краткой формте.
 func (h *MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Path[1:]
@@ -68,6 +75,7 @@ func (h *MyHandler) ServeGetHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ServeGetAllURLS обрабатывает GET запрос за получение всех URL.
 func (h *MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -95,6 +103,7 @@ func (h *MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
 	w.Write(urlsJSON)
 }
 
+// ServePostHTTP обрабатывает POST запрос на сохранение нового URL.
 func (h *MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// читаем Body
@@ -132,14 +141,19 @@ func (h *MyHandler) ServePostHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.baseURL + "/" + id))
 }
 
+// MyURL хранит информацию о URL.
 type MyURL struct {
+	// URL -  URL в формате JSON
 	URL string `json:"url"`
 }
 
+// MyURL хранит информацию о URL для выдачи.
 type MyResultURL struct {
+	// URL -  URL в формате JSON
 	URL string `json:"result"`
 }
 
+// ServePostHTTP обрабатывает POST запрос на сохранение нового URL в формате JSON.
 func (h *MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// читаем Body
@@ -190,16 +204,23 @@ func (h *MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request)
 	w.Write(txBz)
 }
 
+// MyBatchURL хранит информацию о множестве URL.
 type MyBatchURL struct {
-	OriginalURL   string `json:"original_url"`
+	// OriginalURL - исходный URL в формате JSON.
+	OriginalURL string `json:"original_url"`
+	// CorrelationID - идентификатор соответсвующего URL в формате JSON.
 	CorrelationID string `json:"correlation_id"`
 }
 
+// MyBatchURL хранит информацию о множестве URL для выдачи пользователю.
 type MyBatchResultURL struct {
-	ShortURL      string `json:"short_url"`
+	// ShortURL - краткая формате URL в формате JSON
+	ShortURL string `json:"short_url"`
+	// CorrelationID - идентификатор соответсвующего URL в формате JSON.
 	CorrelationID string `json:"correlation_id"`
 }
 
+// ServePostHTTP обрабатывает POST запрос на сохранение множества новых URL в формате JSON.
 func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// читаем Body
@@ -258,8 +279,10 @@ func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Req
 	w.Write(txBz)
 }
 
+// MyURLS тип для представлние множетсва URL.
 type MyURLS []string
 
+// ServeDeleteBatchHTTP обрабатывает DELETE запрос на удаление можества URL в формате JSON.
 func (h *MyHandler) ServeDeleteBatchHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// читаем Body

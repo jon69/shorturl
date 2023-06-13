@@ -1,3 +1,4 @@
+// Модуль server представляет абстрацию сервера по обработке HTTP запросов.
 package server
 
 import (
@@ -19,41 +20,60 @@ import (
 	"crypto/sha256"
 
 	uuid "github.com/satori/go.uuid"
+
+	_ "net/http/pprof" // подключаем пакет pprof
 )
 
+// MyServer хранит информацию о сервере.
 type MyServer struct {
+	// serverAddress - адрес (хост:порт) по которому запускается сервер.
 	serverAddress string
-	baseURL       string
-	filePath      string
-	key           []byte
-	conndb        string
+	// baseURL - адрес (хост:порт) для выдачи сохраненных URL.
+	baseURL string
+	// filePath - путь до файла с информацией о сохраненных URL.
+	filePath string
+	// key - секретный ключ на подписи куки.
+	key []byte
+	// conndb - параметры подключения к БД.
+	conndb string
 }
 
+// MakeMyServer создает новый сервер.
 func MakeMyServer() MyServer {
 	h := MyServer{}
 	return h
 }
 
+// SetServerAddr устанавливает новое значение адреса на котором запускается сервер.
 func (h *MyServer) SetServerAddr(str string) {
 	h.serverAddress = str
 	log.Print("server address=" + h.serverAddress)
 }
+
+// SetBaseURL устанавливает новое значение адреса для выдачи сохраненных URL.
 func (h *MyServer) SetBaseURL(str string) {
 	h.baseURL = str
 	log.Print("base url=" + h.baseURL)
 }
+
+// SetFilePath устанавливает новое значение пути для сохранение URL.
 func (h *MyServer) SetFilePath(str string) {
 	h.filePath = str
 	log.Print("path to file=" + h.filePath)
 }
+
+// SetSecretKey устанавливает новое значение секретного ключа.
 func (h *MyServer) SetSecretKey(b []byte) {
 	h.key = b
 }
+
+// SetConnDB устанавливает новое значение параметров подключения к БД.
 func (h *MyServer) SetConnDB(str string) {
 	h.conndb = str
 	log.Print("connection to db=" + h.conndb)
 }
 
+// RunNetHTTP устанавливает обработчки и запускает сервер.
 func (h *MyServer) RunNetHTTP() {
 	handler := handlers.MakeMyHandler(h.filePath, h.conndb)
 	handler.SetBaseURL(h.baseURL)
@@ -67,6 +87,11 @@ func (h *MyServer) RunNetHTTP() {
 	r.Post("/api/shorten/batch", authHandle(h.key, gzipHandle(handler.ServeShortenPostBatchHTTP)))
 	r.Delete("/api/user/urls", authHandle(h.key, gzipHandle(handler.ServeDeleteBatchHTTP)))
 
+	// только для pprof приходится запустить отдельный сервер
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
+
 	log.Fatal(http.ListenAndServe(h.serverAddress, r))
 }
 
@@ -75,6 +100,7 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+// Write записывает данные в сжатом формате
 func (w gzipWriter) Write(b []byte) (int, error) {
 	// w.Writer будет отвечать за gzip-сжатие, поэтому пишем в него
 	log.Print("compressing data...", b)

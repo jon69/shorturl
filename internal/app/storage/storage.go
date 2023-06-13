@@ -1,3 +1,4 @@
+// Модуль storage хранит информацию о URL.
 package storage
 
 import (
@@ -12,22 +13,35 @@ import (
 	dbh "github.com/jon69/shorturl/internal/app/db"
 )
 
+// MyDelPair храние информацию о URL для удаления.
 type MyDelPair struct {
-	uid     string
-	value   string
+	// uid - идентификатор.
+	uid string
+	// value - значение.
+	value string
+	// deleted - признак удаления.
 	deleted bool
-	uidI    uint64
+	// uid - идентификатор.
+	uidI uint64
 }
 
+// StorageURL хранилище URL.
 type StorageURL struct {
-	urls     map[string]map[string]MyDelPair
-	mux      *sync.RWMutex
-	counter  uint64
+	// urls - множество URL.
+	urls map[string]map[string]MyDelPair
+	// mux - мьютекс для синхронизации.
+	mux *sync.RWMutex
+	// counter - счетчик всех URL.
+	counter uint64
+	// filePath - путь к фалу для хранения URL.
 	filePath string
-	connDB   string
+	// connDB - параметры подключения к БД.
+	connDB string
+	// restored - признак восстановления.
 	restored bool
 }
 
+// NewStorage создает новое хранилище.
 func NewStorage(filePath string, conndb string) *StorageURL {
 	s := &StorageURL{}
 	s.mux = &sync.RWMutex{}
@@ -76,12 +90,18 @@ func (h *StorageURL) getNewID() uint64 {
 	}
 }
 
+// EventDel храние информацию о удаляемых URL.
 type EventDel struct {
-	User  string `json:"user"`
-	Key   uint64 `json:"key"`
+	// User - идентификатор пользователя.
+	User string `json:"user"`
+	// Key - ключ.
+	Key uint64 `json:"key"`
+	// Value - удаляемое значение.
 	Value string `json:"value"`
-	UID   string `json:"uid"`
-	DEL   bool   `json:"del"`
+	// UID - индентификатор.
+	UID string `json:"uid"`
+	// DEL - признак удаления.
+	DEL bool `json:"del"`
 }
 
 func max(value1 uint64, value2 uint64) uint64 {
@@ -170,6 +190,7 @@ func (h *StorageURL) restoreFromFile() {
 	}
 }
 
+// PutUserURL сохраняет URL в хранилище.
 func (h *StorageURL) PutUserURL(uid string, value string) (int, string) {
 	user := "1"
 	log.Print("StorageURL.PutURL user=", user)
@@ -225,6 +246,7 @@ func (h *StorageURL) PutUserURL(uid string, value string) (int, string) {
 	return iou, strKey
 }
 
+// DelUserURL удаляет URL из хранилища.
 func (h *StorageURL) DelUserURL(uid string, strKey string) bool {
 	user := "1"
 	log.Print("StorageURL.DelUserURL user=", user)
@@ -279,6 +301,7 @@ func (h *StorageURL) DelUserURL(uid string, strKey string) bool {
 	return true
 }
 
+// GetUserURL возвращает URL из хранилища на основе идентификатора.
 func (h *StorageURL) GetUserURL(uid string, id string) (string, bool, bool) {
 	user := "1"
 	log.Print("StorageURL.GetURL user=", user)
@@ -295,11 +318,15 @@ func (h *StorageURL) GetUserURL(uid string, id string) (string, bool, bool) {
 	return val.value, ok, val.deleted
 }
 
+// MyURLS представляет информацию о URL
 type MyURLS struct {
-	ShortURL    string `json:"short_url"`
+	// ShortURL - краткая форма URL
+	ShortURL string `json:"short_url"`
+	// OriginalURL - исходная длинная форма URL
 	OriginalURL string `json:"original_url"`
 }
 
+// GetUserURLS возвращает множество URL из хранилища.
 func (h *StorageURL) GetUserURLS(uid string, url string) ([]byte, bool) {
 	user := "1"
 	log.Print("StorageURL.GetURLS user=", user)
@@ -331,18 +358,22 @@ func (h *StorageURL) GetUserURLS(uid string, url string) ([]byte, bool) {
 	return urlsJSON, retOK
 }
 
+// PutURL сохраняет URL в хранилище.
 func (h *StorageURL) PutURL(value string) (int, string) {
 	return h.PutUserURL("1", value)
 }
 
+// GetURL возвращает URL из хранилища.
 func (h *StorageURL) GetURL(id string) (string, bool, bool) {
 	return h.GetUserURL("1", id)
 }
 
+// DelURL удаляет URL из хранилища.
 func (h *StorageURL) DelURL(id string) bool {
 	return h.DelUserURL("1", id)
 }
 
+// GetURLS возвращает множества URL из хранилища.
 func (h *StorageURL) GetURLS(url string) ([]byte, bool) {
 	return h.GetUserURLS("1", url)
 }
