@@ -1,3 +1,4 @@
+// Модуль osexitcheckanalyzer осуществляет статическую проверку на вызов функции os.Exit
 package osexitcheckanalyzer
 
 import (
@@ -6,6 +7,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+// OsExitCheckAnalyzer переменная для экспорта
 var OsExitCheckAnalyzer = &analysis.Analyzer{
 	Name: "osexitcheck",
 	Doc:  "check for os.Exit usage in main",

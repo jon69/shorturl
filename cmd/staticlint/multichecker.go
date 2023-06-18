@@ -33,7 +33,7 @@ func main() {
 
 	for _, v := range staticcheck.Analyzers {
 		// добавляем в массив нужные проверки
-		for checkName, _ := range checks {
+		for checkName := range checks {
 			if strings.HasPrefix(v.Analyzer.Name, checkName) {
 				mychecks = append(mychecks, v.Analyzer)
 			}
