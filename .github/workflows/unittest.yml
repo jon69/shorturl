@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build server binary
+      - name: Running tests
         run: |
           go test -race -coverprofile=coverage.out -covermode atomic ./...
 
