@@ -2,26 +2,23 @@
 package server
 
 import (
-	"encoding/hex"
-	"log"
-	"net/http"
-
 	"compress/gzip"
-	"io"
-	"strings"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/jon69/shorturl/internal/app/handlers"
-
-	"errors"
-
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"io"
+	"log"
+	"net/http"
+	"strings"
 
+	_ "net/http/pprof"
+
+	"github.com/go-chi/chi/v5"
 	uuid "github.com/satori/go.uuid"
 
-	_ "net/http/pprof" // подключаем пакет pprof
+	"github.com/jon69/shorturl/internal/app/handlers"
 )
 
 // MyServer хранит информацию о сервере.

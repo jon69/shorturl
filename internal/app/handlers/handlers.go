@@ -3,11 +3,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
-
-	"fmt"
 
 	dbh "github.com/jon69/shorturl/internal/app/db"
 	"github.com/jon69/shorturl/internal/app/storage"
