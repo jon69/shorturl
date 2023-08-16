@@ -3,11 +3,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
-
-	"fmt"
 
 	dbh "github.com/jon69/shorturl/internal/app/db"
 	"github.com/jon69/shorturl/internal/app/storage"
@@ -28,6 +27,7 @@ type MyHandler struct {
 func MakeMyHandler(filePath string, conndb string) MyHandler {
 	h := MyHandler{}
 	h.urlstorage = storage.NewStorage(filePath, conndb)
+	h.conndb = conndb
 	return h
 }
 
@@ -39,10 +39,14 @@ func (h *MyHandler) SetBaseURL(url string) {
 // ServeGetPING обрабатывает запрос на проверку подключения к БДServeGetPING
 func (h *MyHandler) ServeGetPING(w http.ResponseWriter, r *http.Request) {
 	log.Println("ServeGetPING")
-	if dbh.Ping(h.conndb) {
-		w.WriteHeader(http.StatusOK)
+	if h.conndb != "" {
+		if dbh.Ping(h.conndb) {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	} else {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -83,9 +87,9 @@ func (h *MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
 	var ok bool
 
 	if v := ctx.Value(CTXKey{}); v != nil {
-		urlsJSON, ok = h.urlstorage.GetUserURLS(fmt.Sprintf("%v", v), h.baseURL)
+		_, urlsJSON, ok = h.urlstorage.GetUserURLS(fmt.Sprintf("%v", v), h.baseURL)
 	} else {
-		urlsJSON, ok = h.urlstorage.GetURLS(h.baseURL)
+		_, urlsJSON, ok = h.urlstorage.GetURLS(h.baseURL)
 	}
 
 	if !ok {

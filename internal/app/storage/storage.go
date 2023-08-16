@@ -327,7 +327,7 @@ type MyURLS struct {
 }
 
 // GetUserURLS возвращает множество URL из хранилища.
-func (h *StorageURL) GetUserURLS(uid string, url string) ([]byte, bool) {
+func (h *StorageURL) GetUserURLS(uid string, url string) ([]MyURLS, []byte, bool) {
 	user := "1"
 	log.Print("StorageURL.GetURLS user=", user)
 	h.mux.RLock()
@@ -355,7 +355,7 @@ func (h *StorageURL) GetUserURLS(uid string, url string) ([]byte, bool) {
 	}
 
 	h.mux.RUnlock()
-	return urlsJSON, retOK
+	return urls, urlsJSON, retOK
 }
 
 // PutURL сохраняет URL в хранилище.
@@ -374,6 +374,6 @@ func (h *StorageURL) DelURL(id string) bool {
 }
 
 // GetURLS возвращает множества URL из хранилища.
-func (h *StorageURL) GetURLS(url string) ([]byte, bool) {
+func (h *StorageURL) GetURLS(url string) ([]MyURLS, []byte, bool) {
 	return h.GetUserURLS("1", url)
 }

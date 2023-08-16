@@ -3,14 +3,36 @@ package main
 import (
 	"crypto/rand"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/jon69/shorturl/internal/app/server"
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
+func fillIfEmpty(str string) string {
+	if str == "" {
+		str = "N/A"
+	}
+	return str
+}
+
 func main() {
 	args := os.Args
+
+	fmt.Printf("Build version: %s", fillIfEmpty(buildVersion))
+	fmt.Println()
+	fmt.Printf("Build date: %s", fillIfEmpty(buildDate))
+	fmt.Println()
+	fmt.Printf("Build commit: %s", fillIfEmpty(buildCommit))
+	fmt.Println()
+
 	log.Printf("Все аргументы запуска: %v\n", args)
 
 	serverAddress := os.Getenv("SERVER_ADDRESS")

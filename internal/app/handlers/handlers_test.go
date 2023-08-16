@@ -29,7 +29,7 @@ func TestServeHTTP(t *testing.T) {
 		resp response
 	}{
 		{
-			name: "post test",
+			name: "post",
 			req: request{
 				method: http.MethodPost,
 				url:    "/",
@@ -43,7 +43,7 @@ func TestServeHTTP(t *testing.T) {
 			},
 		},
 		{
-			name: "get test",
+			name: "get",
 			req: request{
 				method: http.MethodGet,
 				url:    "/1",
@@ -54,6 +54,34 @@ func TestServeHTTP(t *testing.T) {
 				body:        "",
 				contentType: "",
 				location:    "http://yandex.ru",
+			},
+		},
+		{
+			name: "ping",
+			req: request{
+				method: http.MethodGet,
+				url:    "/ping",
+				body:   "",
+			},
+			resp: response{
+				code:        200,
+				body:        "",
+				contentType: "",
+				location:    "",
+			},
+		},
+		{
+			name: "post shorten",
+			req: request{
+				method: http.MethodPost,
+				url:    "/api/shorten",
+				body:   "{\"url\": \"http://gavrilin.ru\"}",
+			},
+			resp: response{
+				code:        201,
+				body:        "{\"result\":\"http://localhost:8080/2\"}",
+				contentType: "application/json",
+				location:    "",
 			},
 		},
 	}
@@ -68,10 +96,14 @@ func TestServeHTTP(t *testing.T) {
 		// определяем хендлер
 
 		var foo http.HandlerFunc
-		if tt.req.method == http.MethodGet {
+		if tt.name == "get" {
 			foo = hendl.ServeGetHTTP
-		} else {
+		} else if tt.name == "post" {
 			foo = hendl.ServePostHTTP
+		} else if tt.name == "ping" {
+			foo = hendl.ServeGetPING
+		} else if tt.name == "post shorten" {
+			foo = hendl.ServeShortenPostHTTP
 		}
 		h := http.HandlerFunc(foo)
 		// запускаем сервер
