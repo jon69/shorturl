@@ -39,6 +39,7 @@ func main() {
 	baseURL := os.Getenv("BASE_URL")
 	filePath := os.Getenv("FILE_STORAGE_PATH")
 	conndb := os.Getenv("DATABASE_DSN")
+	enableHTTPS := os.Getenv("ENABLE_HTTPS")
 
 	log.Print("os FILE_STORAGE_PATH=" + filePath)
 	log.Print("os SERVER_ADDRESS=" + serverAddress)
@@ -56,6 +57,9 @@ func main() {
 	if conndb == "" {
 		flag.StringVar(&conndb, "d", "", "connection to database")
 	}
+	if enableHTTPS == "" {
+		flag.StringVar(&enableHTTPS, "s", "", "enable HTTPS")
+	}
 
 	flag.Parse()
 
@@ -64,6 +68,7 @@ func main() {
 	serv.SetConnDB(conndb)
 	serv.SetFilePath(filePath)
 	serv.SetServerAddr(serverAddress)
+	serv.SetEnableHTTPS(enableHTTPS)
 
 	key, err := generateRandom(16)
 	if err != nil {

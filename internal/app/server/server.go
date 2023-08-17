@@ -19,6 +19,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/jon69/shorturl/internal/app/handlers"
+	"github.com/jon69/shorturl/internal/app/httpsmaker"
 )
 
 // MyServer хранит информацию о сервере.
@@ -33,11 +34,14 @@ type MyServer struct {
 	key []byte
 	// conndb - параметры подключения к БД.
 	conndb string
+	// enableHTTPS - признак использования HTTPS.
+	enableHTTPS bool
 }
 
 // MakeMyServer создает новый сервер.
 func MakeMyServer() MyServer {
 	h := MyServer{}
+	h.enableHTTPS = false
 	return h
 }
 
@@ -70,6 +74,16 @@ func (h *MyServer) SetConnDB(str string) {
 	log.Print("connection to db=" + h.conndb)
 }
 
+// SetEnableHTTPS устанавливает признак использования HTTPS соединения.
+func (h *MyServer) SetEnableHTTPS(str string) {
+	if str != "" {
+		h.enableHTTPS = true
+	} else {
+		h.enableHTTPS = false
+	}
+	log.Print("enable HTTPS=" + str)
+}
+
 // RunNetHTTP устанавливает обработчки и запускает сервер.
 func (h *MyServer) RunNetHTTP() {
 	handler := handlers.MakeMyHandler(h.filePath, h.conndb)
@@ -89,7 +103,15 @@ func (h *MyServer) RunNetHTTP() {
 		log.Println(http.ListenAndServe(":6060", nil))
 	}()
 
-	log.Fatal(http.ListenAndServe(h.serverAddress, r))
+	if h.enableHTTPS {
+		certFile, keyFile, err := httpsmaker.MakeHTTPS()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Fatal(http.ListenAndServeTLS(h.serverAddress, certFile, keyFile, r))
+	} else {
+		log.Fatal(http.ListenAndServe(h.serverAddress, r))
+	}
 }
 
 type gzipWriter struct {
