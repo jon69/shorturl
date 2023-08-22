@@ -87,6 +87,7 @@ func MakeHTTPS() (string, string, error) {
 		log.Printf("can not Create file %s | %s", myCertFile, err.Error())
 		return "", "", err
 	}
+	defer fileCERT.Close()
 
 	_, err = certPEM.WriteTo(fileCERT)
 	if err != nil {
@@ -99,6 +100,7 @@ func MakeHTTPS() (string, string, error) {
 		log.Printf("can not Create file %s | %s", myKeyFile, err.Error())
 		return "", "", err
 	}
+	defer fileKey.Close()
 
 	_, err = privateKeyPEM.WriteTo(fileKey)
 	if err != nil {
