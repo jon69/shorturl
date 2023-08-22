@@ -12,6 +12,7 @@ type ConfigHandler struct {
 	params configParams
 }
 
+// Parse открывает файл конфигурации и парсит его содержимое.
 func Parse(configPath string) (ConfigHandler, error) {
 	cfg := ConfigHandler{}
 	log.Printf("opening config file %s", configPath)
@@ -28,35 +29,44 @@ func Parse(configPath string) (ConfigHandler, error) {
 	return cfg, nil
 }
 
+// ServerAddress возвращает адрес сервера.
 func (h *ConfigHandler) ServerAddress(serverAddress string) string {
 	if serverAddress != "" {
 		return serverAddress
 	}
 	return h.params.Addr
 }
+
+// BaseURL возвращает базовый URL.
 func (h *ConfigHandler) BaseURL(baseURL string) string {
 	if baseURL != "" {
 		return baseURL
 	}
 	return h.params.BaseURL
 }
+
+// FilePath возвращает путь к файлу с адресами.
 func (h *ConfigHandler) FilePath(filePath string) string {
 	if filePath != "" {
 		return filePath
 	}
 	return h.params.FileStoragePath
 }
+
+// DatabaseDNS возвращает адрес БД.
 func (h *ConfigHandler) DatabaseDNS(conndb string) string {
 	if conndb != "" {
 		return conndb
 	}
 	return h.params.DatabaseDNS
 }
+
+// EnableHTTPS возвращает признак использования https.
 func (h *ConfigHandler) EnableHTTPS(enableHTTPS string) string {
 	if enableHTTPS != "" {
 		return enableHTTPS
 	}
-	if h.params.EnableHttps {
+	if h.params.EnableHTTPS {
 		return "true"
 	}
 	return ""
@@ -73,5 +83,5 @@ type configParams struct {
 	// database_dsn - адрес БД.
 	DatabaseDNS string `json:"database_dsn"`
 	// enable_https - признак использования https.
-	EnableHttps bool `json:"enable_https"`
+	EnableHTTPS bool `json:"enable_https"`
 }
