@@ -11,7 +11,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	_ "net/http/pprof"
 
@@ -86,6 +89,11 @@ func (h *MyServer) SetEnableHTTPS(str string) {
 
 // RunNetHTTP устанавливает обработчки и запускает сервер.
 func (h *MyServer) RunNetHTTP() {
+
+	sigs := make(chan os.Signal, 1)
+	// регистрируем перенаправление прерываний
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
 	handler := handlers.MakeMyHandler(h.filePath, h.conndb)
 	handler.SetBaseURL(h.baseURL)
 	r := chi.NewRouter()
@@ -98,9 +106,30 @@ func (h *MyServer) RunNetHTTP() {
 	r.Post("/api/shorten/batch", authHandle(h.key, gzipHandle(handler.ServeShortenPostBatchHTTP)))
 	r.Delete("/api/user/urls", authHandle(h.key, gzipHandle(handler.ServeDeleteBatchHTTP)))
 
+	var mainsrv = http.Server{Addr: h.serverAddress, Handler: r}
+	var pprofsrv = http.Server{Addr: ":6060"}
+
+	// запускаем горутину обработки пойманных прерываний
+	go func() {
+		// читаем из канала прерываний
+		<-sigs
+		log.Println("interrupted...graceful shutdown")
+		// получили сигнал запускаем процедуру graceful shutdown
+		if err := pprofsrv.Shutdown(context.Background()); err != nil {
+			log.Printf("Pprof HTTP server Shutdown: %v", err)
+		}
+		// получили сигнал запускаем процедуру graceful shutdown
+		if err := mainsrv.Shutdown(context.Background()); err != nil {
+			log.Printf("Main HTTP server Shutdown: %v", err)
+		}
+	}()
+
 	// только для pprof приходится запустить отдельный сервер
 	go func() {
-		log.Println(http.ListenAndServe(":6060", nil))
+		err := pprofsrv.ListenAndServe()
+		if err != nil {
+			log.Printf("pprofsrv ListenAndServe exited: %v", err)
+		}
 	}()
 
 	if h.enableHTTPS {
@@ -108,9 +137,15 @@ func (h *MyServer) RunNetHTTP() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Fatal(http.ListenAndServeTLS(h.serverAddress, certFile, keyFile, r))
+		err = mainsrv.ListenAndServeTLS(certFile, keyFile)
+		if err != nil {
+			log.Printf("mainsrv ListenAndServeTLS exited: %v", err)
+		}
 	} else {
-		log.Fatal(http.ListenAndServe(h.serverAddress, r))
+		err := mainsrv.ListenAndServe()
+		if err != nil {
+			log.Printf("mainsrv ListenAndServeTLS exited: %v", err)
+		}
 	}
 }
 

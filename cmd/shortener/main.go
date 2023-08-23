@@ -102,6 +102,7 @@ func main() {
 	log.Println("generated new key")
 	serv.SetSecretKey(key)
 	serv.RunNetHTTP()
+	log.Println("Exit main")
 }
 
 func generateRandom(size int) ([]byte, error) {
