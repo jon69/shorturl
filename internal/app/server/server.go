@@ -39,6 +39,8 @@ type MyServer struct {
 	conndb string
 	// enableHTTPS - признак использования HTTPS.
 	enableHTTPS bool
+	// trustedSubNet - доверенная подсеть.
+	trustedSubNet string
 }
 
 // MakeMyServer создает новый сервер.
@@ -77,6 +79,12 @@ func (h *MyServer) SetConnDB(str string) {
 	log.Print("connection to db=" + h.conndb)
 }
 
+// SetTrustedSubNet устанавливает значение доверенной подсети.
+func (h *MyServer) SetTrustedSubNet(str string) {
+	h.trustedSubNet = str
+	log.Print("trustedSubNet=" + h.trustedSubNet)
+}
+
 // SetEnableHTTPS устанавливает признак использования HTTPS соединения.
 func (h *MyServer) SetEnableHTTPS(str string) {
 	if str != "" {
@@ -96,11 +104,13 @@ func (h *MyServer) RunNetHTTP() {
 
 	handler := handlers.MakeMyHandler(h.filePath, h.conndb)
 	handler.SetBaseURL(h.baseURL)
+	handler.SetTrustedSubNet(h.trustedSubNet)
 	r := chi.NewRouter()
 
 	r.Get("/ping", handler.ServeGetPING)
 	r.Get("/{id}", authHandle(h.key, gzipHandle(handler.ServeGetHTTP)))
 	r.Get("/api/user/urls", authHandle(h.key, gzipHandle(handler.ServeGetAllURLS)))
+	r.Get("/api/internal/stats", authHandle(h.key, gzipHandle(handler.ServeGetStats)))
 	r.Post("/", authHandle(h.key, gzipHandle(handler.ServePostHTTP)))
 	r.Post("/api/shorten", authHandle(h.key, gzipHandle(handler.ServeShortenPostHTTP)))
 	r.Post("/api/shorten/batch", authHandle(h.key, gzipHandle(handler.ServeShortenPostBatchHTTP)))

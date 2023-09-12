@@ -44,6 +44,8 @@ func main() {
 	configPath := os.Getenv("CONFIG")
 	confPath := ""
 
+	trustedSubNet := os.Getenv("TRUSTED_SUBNET")
+
 	log.Print("os FILE_STORAGE_PATH=" + filePath)
 	log.Print("os SERVER_ADDRESS=" + serverAddress)
 	log.Print("os BASE_URL=" + baseURL)
@@ -66,6 +68,9 @@ func main() {
 	}
 	if enableHTTPS == "" {
 		flag.StringVar(&enableHTTPS, "s", "", "enable HTTPS")
+	}
+	if trustedSubNet == "" {
+		flag.StringVar(&trustedSubNet, "t", "", "trusted subnet")
 	}
 
 	flag.Parse()
@@ -93,6 +98,7 @@ func main() {
 	serv.SetFilePath(filePath)
 	serv.SetServerAddr(serverAddress)
 	serv.SetEnableHTTPS(enableHTTPS)
+	serv.SetTrustedSubNet(trustedSubNet)
 
 	key, err := generateRandom(16)
 	if err != nil {

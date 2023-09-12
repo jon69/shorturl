@@ -39,6 +39,11 @@ type StorageURL struct {
 	connDB string
 	// restored - признак восстановления.
 	restored bool
+
+	// users - все пользователи сервиса
+	users map[string]bool
+	// countURLS - количество сокращенных ссылок в сервисе
+	countURLS int
 }
 
 // NewStorage создает новое хранилище.
@@ -50,6 +55,8 @@ func NewStorage(filePath string, conndb string) *StorageURL {
 	s.filePath = filePath
 	s.connDB = conndb
 	s.restored = false
+	s.countURLS = 0
+	s.users = make(map[string]bool)
 	if conndb != "" {
 		dbh.CreateIfNotExist(conndb)
 	}
@@ -62,6 +69,12 @@ func (h *StorageURL) put(user string, key string, v string, u string, del bool, 
 	_, ok := h.urls[user]
 	if !ok {
 		h.urls[user] = make(map[string]MyDelPair)
+	}
+	h.users[u] = true
+
+	_, isExist := h.urls[user][key]
+	if !isExist && !del {
+		h.countURLS += 1
 	}
 	h.urls[user][key] = MyDelPair{value: v, uid: u, deleted: del, uidI: uidi}
 }
@@ -76,6 +89,7 @@ func (h *StorageURL) del(user string, key string, u string) (bool, string, uint6
 		return false, "", 0
 	}
 	entry.deleted = true
+	h.countURLS -= 1
 	h.urls[user][key] = entry
 	return true, entry.value, entry.uidI
 }
@@ -345,6 +359,8 @@ func (h *StorageURL) GetUserURLS(uid string, url string) ([]MyURLS, []byte, bool
 		}
 	}
 
+	h.mux.RUnlock()
+
 	if len(urls) != 0 {
 		var err error
 		urlsJSON, err = json.Marshal(urls)
@@ -354,8 +370,34 @@ func (h *StorageURL) GetUserURLS(uid string, url string) ([]MyURLS, []byte, bool
 		}
 	}
 
-	h.mux.RUnlock()
 	return urls, urlsJSON, retOK
+}
+
+// Stat представляет статистику
+type Stat struct {
+	// CountURLS - количество сокращённых URL в сервисе
+	CountURLS int `json:"urls"`
+	// CountUsers - количество пользователей в сервисе
+	CountUsers int `json:"users"`
+}
+
+// GetStat возвращает множество статистику в видеж JSON.
+func (h *StorageURL) GetStat() ([]byte, bool) {
+
+	var stat Stat
+	retOK := true
+
+	h.mux.RLock()
+	stat.CountURLS = h.countURLS
+	stat.CountUsers = len(h.users)
+	h.mux.RUnlock()
+
+	statJSON, err := json.Marshal(stat)
+	if err != nil {
+		log.Print("Marshal stat fail ", err.Error())
+		retOK = false
+	}
+	return statJSON, retOK
 }
 
 // PutURL сохраняет URL в хранилище.

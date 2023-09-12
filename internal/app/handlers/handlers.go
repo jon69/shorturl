@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 
 	dbh "github.com/jon69/shorturl/internal/app/db"
@@ -18,9 +19,16 @@ type CTXKey struct {
 
 // MyHandler хранит информацию об обработчике.
 type MyHandler struct {
+	// urlstorage - хранилище данных.
 	urlstorage *storage.StorageURL
-	baseURL    string
-	conndb     string
+	// baseURL - адрес (хост:порт) для выдачи сохраненных URL.
+	baseURL string
+	// conndb - параметры подключения к БД.
+	conndb string
+	// trustedSubNet - доверенная подсеть.
+	trustedSubNet string
+	// ipnet - подсеть
+	ipnet *net.IPNet
 }
 
 // MyHandler созает новый обработчик.
@@ -28,12 +36,27 @@ func MakeMyHandler(filePath string, conndb string) MyHandler {
 	h := MyHandler{}
 	h.urlstorage = storage.NewStorage(filePath, conndb)
 	h.conndb = conndb
+	h.trustedSubNet = ""
 	return h
 }
 
 // SetBaseURL устанавливает новое значение адреса запуска сервера обработки HTTP запросов.
 func (h *MyHandler) SetBaseURL(url string) {
 	h.baseURL = url
+}
+
+// SetTrustedSubNet устанавливает доверенную подсеть.
+func (h *MyHandler) SetTrustedSubNet(str string) {
+	if str == "" {
+		return
+	}
+	_, ipnet, err := net.ParseCIDR(str)
+	if err != nil {
+		log.Print("error parse CIDR: " + err.Error())
+		return
+	}
+	h.trustedSubNet = str
+	h.ipnet = ipnet
 }
 
 // ServeGetPING обрабатывает запрос на проверку подключения к БДServeGetPING
@@ -105,6 +128,33 @@ func (h *MyHandler) ServeGetAllURLS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(urlsJSON)
+}
+
+// ServeGetStats обрабатывает GET запрос за получение статистики.
+func (h *MyHandler) ServeGetStats(w http.ResponseWriter, r *http.Request) {
+	realIP := r.Header.Get("X-Real-IP")
+	ip := net.ParseIP(realIP)
+
+	if h.trustedSubNet == "" || ip == nil {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if !h.ipnet.Contains(ip) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	statJSON, ok := h.urlstorage.GetStat()
+
+	if !ok {
+		http.Error(w, "can not get stat", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(statJSON)
 }
 
 // ServePostHTTP обрабатывает POST запрос на сохранение нового URL.
