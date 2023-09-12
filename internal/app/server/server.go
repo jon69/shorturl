@@ -11,7 +11,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	_ "net/http/pprof"
 
@@ -19,6 +22,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/jon69/shorturl/internal/app/handlers"
+	"github.com/jon69/shorturl/internal/app/httpsmaker"
 )
 
 // MyServer хранит информацию о сервере.
@@ -33,11 +37,14 @@ type MyServer struct {
 	key []byte
 	// conndb - параметры подключения к БД.
 	conndb string
+	// enableHTTPS - признак использования HTTPS.
+	enableHTTPS bool
 }
 
 // MakeMyServer создает новый сервер.
 func MakeMyServer() MyServer {
 	h := MyServer{}
+	h.enableHTTPS = false
 	return h
 }
 
@@ -70,8 +77,23 @@ func (h *MyServer) SetConnDB(str string) {
 	log.Print("connection to db=" + h.conndb)
 }
 
+// SetEnableHTTPS устанавливает признак использования HTTPS соединения.
+func (h *MyServer) SetEnableHTTPS(str string) {
+	if str != "" {
+		h.enableHTTPS = true
+	} else {
+		h.enableHTTPS = false
+	}
+	log.Print("enable HTTPS=" + str)
+}
+
 // RunNetHTTP устанавливает обработчки и запускает сервер.
 func (h *MyServer) RunNetHTTP() {
+
+	sigs := make(chan os.Signal, 1)
+	// регистрируем перенаправление прерываний
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
 	handler := handlers.MakeMyHandler(h.filePath, h.conndb)
 	handler.SetBaseURL(h.baseURL)
 	r := chi.NewRouter()
@@ -84,12 +106,47 @@ func (h *MyServer) RunNetHTTP() {
 	r.Post("/api/shorten/batch", authHandle(h.key, gzipHandle(handler.ServeShortenPostBatchHTTP)))
 	r.Delete("/api/user/urls", authHandle(h.key, gzipHandle(handler.ServeDeleteBatchHTTP)))
 
-	// только для pprof приходится запустить отдельный сервер
+	var mainsrv = http.Server{Addr: h.serverAddress, Handler: r}
+	var pprofsrv = http.Server{Addr: ":6060"}
+
+	// запускаем горутину обработки пойманных прерываний
 	go func() {
-		log.Println(http.ListenAndServe(":6060", nil))
+		// читаем из канала прерываний
+		<-sigs
+		log.Println("interrupted...graceful shutdown")
+		// получили сигнал запускаем процедуру graceful shutdown
+		if err := pprofsrv.Shutdown(context.Background()); err != nil {
+			log.Printf("Pprof HTTP server Shutdown: %v", err)
+		}
+		// получили сигнал запускаем процедуру graceful shutdown
+		if err := mainsrv.Shutdown(context.Background()); err != nil {
+			log.Printf("Main HTTP server Shutdown: %v", err)
+		}
 	}()
 
-	log.Fatal(http.ListenAndServe(h.serverAddress, r))
+	// только для pprof приходится запустить отдельный сервер
+	go func() {
+		err := pprofsrv.ListenAndServe()
+		if err != nil {
+			log.Printf("pprofsrv ListenAndServe exited: %v", err)
+		}
+	}()
+
+	if h.enableHTTPS {
+		certFile, keyFile, err := httpsmaker.MakeHTTPS()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = mainsrv.ListenAndServeTLS(certFile, keyFile)
+		if err != nil {
+			log.Printf("mainsrv ListenAndServeTLS exited: %v", err)
+		}
+	} else {
+		err := mainsrv.ListenAndServe()
+		if err != nil {
+			log.Printf("mainsrv ListenAndServeTLS exited: %v", err)
+		}
+	}
 }
 
 type gzipWriter struct {

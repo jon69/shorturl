@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/jon69/shorturl/internal/app/config"
 	"github.com/jon69/shorturl/internal/app/server"
 )
 
@@ -39,11 +40,18 @@ func main() {
 	baseURL := os.Getenv("BASE_URL")
 	filePath := os.Getenv("FILE_STORAGE_PATH")
 	conndb := os.Getenv("DATABASE_DSN")
+	enableHTTPS := os.Getenv("ENABLE_HTTPS")
+	configPath := os.Getenv("CONFIG")
+	confPath := ""
 
 	log.Print("os FILE_STORAGE_PATH=" + filePath)
 	log.Print("os SERVER_ADDRESS=" + serverAddress)
 	log.Print("os BASE_URL=" + baseURL)
 
+	if configPath == "" {
+		flag.StringVar(&configPath, "c", "", "path to config file")
+		flag.StringVar(&confPath, "config", "", "path to config file")
+	}
 	if serverAddress == "" {
 		flag.StringVar(&serverAddress, "a", "127.0.0.1:8080", "server address")
 	}
@@ -56,14 +64,35 @@ func main() {
 	if conndb == "" {
 		flag.StringVar(&conndb, "d", "", "connection to database")
 	}
+	if enableHTTPS == "" {
+		flag.StringVar(&enableHTTPS, "s", "", "enable HTTPS")
+	}
 
 	flag.Parse()
+
+	if configPath == "" {
+		configPath = confPath
+	}
+
+	if configPath != "" {
+		confHandler, err := config.Parse(configPath)
+		if err != nil {
+			log.Printf("can not get confHandler | %s", err.Error())
+			return
+		}
+		serverAddress = confHandler.ServerAddress(serverAddress)
+		baseURL = confHandler.BaseURL(baseURL)
+		filePath = confHandler.FilePath(filePath)
+		conndb = confHandler.DatabaseDNS(conndb)
+		enableHTTPS = confHandler.EnableHTTPS(enableHTTPS)
+	}
 
 	serv := server.MakeMyServer()
 	serv.SetBaseURL(baseURL)
 	serv.SetConnDB(conndb)
 	serv.SetFilePath(filePath)
 	serv.SetServerAddr(serverAddress)
+	serv.SetEnableHTTPS(enableHTTPS)
 
 	key, err := generateRandom(16)
 	if err != nil {
@@ -73,6 +102,7 @@ func main() {
 	log.Println("generated new key")
 	serv.SetSecretKey(key)
 	serv.RunNetHTTP()
+	log.Println("Exit main")
 }
 
 func generateRandom(size int) ([]byte, error) {
