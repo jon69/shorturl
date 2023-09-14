@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/jon69/shorturl/internal/app/storage"
 )
 
 func TestServeHTTP(t *testing.T) {
@@ -85,7 +87,8 @@ func TestServeHTTP(t *testing.T) {
 			},
 		},
 	}
-	hendl := MakeMyHandler("", "")
+	urlstorage := storage.NewStorage("", "")
+	hendl := MakeMyHandler("", urlstorage)
 	hendl.SetBaseURL("http://localhost:8080")
 
 	for _, tt := range tests {
