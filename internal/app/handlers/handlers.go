@@ -32,9 +32,9 @@ type MyHandler struct {
 }
 
 // MyHandler созает новый обработчик.
-func MakeMyHandler(filePath string, conndb string) MyHandler {
+func MakeMyHandler(conndb string, urlstorage *storage.StorageURL) MyHandler {
 	h := MyHandler{}
-	h.urlstorage = storage.NewStorage(filePath, conndb)
+	h.urlstorage = urlstorage
 	h.conndb = conndb
 	h.trustedSubNet = ""
 	return h
@@ -59,7 +59,7 @@ func (h *MyHandler) SetTrustedSubNet(str string) {
 	h.ipnet = ipnet
 }
 
-// ServeGetPING обрабатывает запрос на проверку подключения к БДServeGetPING
+// ServeGetPING обрабатывает запрос на проверку подключения к БД
 func (h *MyHandler) ServeGetPING(w http.ResponseWriter, r *http.Request) {
 	log.Println("ServeGetPING")
 	if h.conndb != "" {

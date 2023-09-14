@@ -107,7 +107,7 @@ func main() {
 	}
 	log.Println("generated new key")
 	serv.SetSecretKey(key)
-	serv.RunNetHTTP()
+	serv.RunServers()
 	log.Println("Exit main")
 }
 

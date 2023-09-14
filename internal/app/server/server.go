@@ -1,4 +1,4 @@
-// Модуль server представляет абстрацию сервера по обработке HTTP запросов.
+// Модуль server представляет абстрацию сервера по обработке запросов.
 package server
 
 import (
@@ -21,8 +21,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	uuid "github.com/satori/go.uuid"
 
+	rpcsrv "github.com/jon69/shorturl/internal/app/grpcserver"
 	"github.com/jon69/shorturl/internal/app/handlers"
 	"github.com/jon69/shorturl/internal/app/httpsmaker"
+	"github.com/jon69/shorturl/internal/app/storage"
 )
 
 // MyServer хранит информацию о сервере.
@@ -95,14 +97,20 @@ func (h *MyServer) SetEnableHTTPS(str string) {
 	log.Print("enable HTTPS=" + str)
 }
 
-// RunNetHTTP устанавливает обработчки и запускает сервер.
-func (h *MyServer) RunNetHTTP() {
+// RunServers устанавливает обработчки и запускает сервера.
+func (h *MyServer) RunServers() {
 
 	sigs := make(chan os.Signal, 1)
 	// регистрируем перенаправление прерываний
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	// создаем потокобезопасное хранилище общее для HTTP и gRPC
+	urlstorage := storage.NewStorage(h.filePath, h.conndb)
 
-	handler := handlers.MakeMyHandler(h.filePath, h.conndb)
+	// создаем gRPC сервер для обработки
+	rpcServer := rpcsrv.MakeServer(h.conndb, urlstorage)
+
+	// создаем HTTP сервер для обработки
+	handler := handlers.MakeMyHandler(h.conndb, urlstorage)
 	handler.SetBaseURL(h.baseURL)
 	handler.SetTrustedSubNet(h.trustedSubNet)
 	r := chi.NewRouter()
@@ -124,6 +132,8 @@ func (h *MyServer) RunNetHTTP() {
 		// читаем из канала прерываний
 		<-sigs
 		log.Println("interrupted...graceful shutdown")
+		// завершаем работу PRC севера
+		rpcServer.Shutdown()
 		// получили сигнал запускаем процедуру graceful shutdown
 		if err := pprofsrv.Shutdown(context.Background()); err != nil {
 			log.Printf("Pprof HTTP server Shutdown: %v", err)
@@ -134,11 +144,22 @@ func (h *MyServer) RunNetHTTP() {
 		}
 	}()
 
+	go func() {
+		err := rpcServer.Serve()
+		if err != nil {
+			log.Printf("rpcServer Serve exited with err: %v", err)
+		} else {
+			log.Printf("rpcServer Serve exited.")
+		}
+	}()
+
 	// только для pprof приходится запустить отдельный сервер
 	go func() {
 		err := pprofsrv.ListenAndServe()
 		if err != nil {
-			log.Printf("pprofsrv ListenAndServe exited: %v", err)
+			log.Printf("pprofsrv ListenAndServe exited with err: %v", err)
+		} else {
+			log.Printf("pprofsrv ListenAndServe exited.")
 		}
 	}()
 
@@ -149,12 +170,16 @@ func (h *MyServer) RunNetHTTP() {
 		}
 		err = mainsrv.ListenAndServeTLS(certFile, keyFile)
 		if err != nil {
-			log.Printf("mainsrv ListenAndServeTLS exited: %v", err)
+			log.Printf("mainsrv ListenAndServeTLS exited with err: %v", err)
+		} else {
+			log.Printf("mainsrv ListenAndServeTLS exited.")
 		}
 	} else {
 		err := mainsrv.ListenAndServe()
 		if err != nil {
-			log.Printf("mainsrv ListenAndServeTLS exited: %v", err)
+			log.Printf("mainsrv ListenAndServe exited with err: %v", err)
+		} else {
+			log.Printf("mainsrv ListenAndServe exited.")
 		}
 	}
 }
