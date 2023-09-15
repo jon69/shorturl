@@ -3,6 +3,7 @@ package rpcsrv
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 
@@ -146,12 +147,18 @@ func (h *gPRCServer) Ping(ctx context.Context, in *pb.PingRequest) (*pb.PingResp
 func (h *gPRCServer) PostURL(ctx context.Context, in *pb.PostURLRequest) (*pb.PostURLResponse, error) {
 	log.Print("gPRCServer PostURL url=" + in.Url)
 
-	var response pb.PostURLResponse
-	response.Stmsg = &pb.StatusMessage{Status: pb.StatusMessage_OK}
-
 	var id string
 	var iou int
-	iou, id = h.urlstorage.PutURL(in.Url)
+	if v := ctx.Value(CTXUid{}); v != nil {
+		uiduser := fmt.Sprintf("%v", v)
+		log.Print("gPRCServer PostURL uiduser=" + uiduser)
+		iou, id = h.urlstorage.PutUserURL(uiduser, in.Url)
+	} else {
+		iou, id = h.urlstorage.PutURL(in.Url)
+	}
+
+	var response pb.PostURLResponse
+	response.Stmsg = &pb.StatusMessage{Status: pb.StatusMessage_OK}
 
 	if iou != 1 {
 		response.Stmsg.Status = pb.StatusMessage_ERROR
