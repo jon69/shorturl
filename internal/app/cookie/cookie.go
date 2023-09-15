@@ -11,6 +11,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+// GetNewSignedCookie получить новую подписанную куку.
 func GetNewSignedCookie(secretKey []byte) (string, string, string) {
 	// создаем новый идентификатор
 	myuuid := uuid.NewV4()
@@ -29,6 +30,7 @@ func GetNewSignedCookie(secretKey []byte) (string, string, string) {
 	return name, val, myuuid.String()
 }
 
+// ValidateCookie проверить подписанную куку.
 func ValidateCookie(secretKey []byte, name string, val string) (bool, string) {
 	// A SHA256 HMAC signature has a fixed length of 32 bytes. To avoid a potential
 	// 'index out of range' panic in the next step, we need to check sure that the
