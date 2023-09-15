@@ -107,7 +107,7 @@ func (h *MyServer) RunServers() {
 	urlstorage := storage.NewStorage(h.filePath, h.conndb)
 
 	// создаем gRPC сервер для обработки
-	rpcServer := rpcsrv.MakeServer(h.conndb, urlstorage)
+	rpcServer := rpcsrv.MakeServer(h.baseURL, h.conndb, urlstorage)
 
 	// создаем HTTP сервер для обработки
 	handler := handlers.MakeMyHandler(h.conndb, urlstorage)

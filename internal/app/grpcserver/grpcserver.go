@@ -21,13 +21,14 @@ type PRCServer struct {
 }
 
 // MakeServer создает ноый RPC сервер.
-func MakeServer(conndb string, urlstorage *storage.StorageURL) *PRCServer {
+func MakeServer(baseURL string, conndb string, urlstorage *storage.StorageURL) *PRCServer {
 	srv := &PRCServer{}
 	// 	создаем сервис
 	srv.grpcserver = grpc.NewServer()
 	mygrpcsrv := &gPRCServer{}
 	mygrpcsrv.conndb = conndb
 	mygrpcsrv.urlstorage = urlstorage
+	mygrpcsrv.baseURL = baseURL
 	// регистрируем сервис
 	pb.RegisterShortURLServer(srv.grpcserver, mygrpcsrv)
 	return srv
@@ -55,6 +56,8 @@ func (srv *PRCServer) Serve() error {
 
 // PRCServer поддерживает все необходимые методы сервера.
 type gPRCServer struct {
+	// baseURL - адрес (хост:порт) для выдачи сохраненных URL.
+	baseURL string
 	// conndb - параметры подключения к БД.
 	conndb string
 	// нужно встраивать тип pb.Unimplemented<TypeName>
@@ -69,12 +72,52 @@ func (h *gPRCServer) Ping(ctx context.Context, in *pb.PingRequest) (*pb.PingResp
 	log.Println("gPRCServer Ping")
 
 	var response pb.PingResponse
-	response.Ping = pb.PingResponse_OK
+	response.Stmsg.Status = pb.StatusMessage_OK
 
 	if h.conndb != "" {
 		if !dbh.Ping(h.conndb) {
-			response.Ping = pb.PingResponse_ERROR
+			response.Stmsg.Status = pb.StatusMessage_ERROR
 		}
 	}
+	return &response, nil
+}
+
+// PostURL обрабатывает запрос на создание укороченной ссылки URL
+func (h *gPRCServer) PostURL(ctx context.Context, in *pb.PostURLRequest) (*pb.PostURLResponse, error) {
+	log.Print("gPRCServer PostURL url=" + in.Url)
+
+	var response pb.PostURLResponse
+	response.Stmsg.Status = pb.StatusMessage_OK
+
+	var id string
+	var iou int
+	iou, id = h.urlstorage.PutURL(in.Url)
+
+	if iou != 1 {
+		response.Stmsg.Status = pb.StatusMessage_ERROR
+	}
+
+	response.ShortUrl = h.baseURL + "/" + id
+	return &response, nil
+}
+
+// GetURL обрабатывает запрос на получение URL
+func (h *gPRCServer) GetURL(ctx context.Context, in *pb.GetURLRequest) (*pb.GetURLResponse, error) {
+	log.Print("gPRCServer GetURL id=" + in.Id)
+
+	var response pb.GetURLResponse
+	response.Stmsg.Status = pb.StatusMessage_OK
+	val, ok, isDel := h.urlstorage.GetURL(in.Id)
+
+	if ok {
+		if isDel {
+			response.Stmsg.Status = pb.StatusMessage_NOT_FOUND
+		} else {
+			response.Url = val
+		}
+	} else {
+		response.Stmsg.Status = pb.StatusMessage_NOT_FOUND
+	}
+
 	return &response, nil
 }

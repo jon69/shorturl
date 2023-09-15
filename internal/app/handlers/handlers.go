@@ -207,7 +207,7 @@ type MyResultURL struct {
 	URL string `json:"result"`
 }
 
-// ServePostHTTP обрабатывает POST запрос на сохранение нового URL в формате JSON.
+// ServeShortenPostHTTP обрабатывает POST запрос на сохранение нового URL в формате JSON.
 func (h *MyHandler) ServeShortenPostHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// читаем Body
@@ -274,7 +274,7 @@ type MyBatchResultURL struct {
 	CorrelationID string `json:"correlation_id"`
 }
 
-// ServePostHTTP обрабатывает POST запрос на сохранение множества новых URL в формате JSON.
+// ServeShortenPostBatchHTTP обрабатывает POST запрос на сохранение множества новых URL в формате JSON.
 func (h *MyHandler) ServeShortenPostBatchHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// читаем Body

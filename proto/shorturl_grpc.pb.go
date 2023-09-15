@@ -19,7 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ShortURL_Ping_FullMethodName = "/shorturl.ShortURL/Ping"
+	ShortURL_Ping_FullMethodName    = "/shorturl.ShortURL/Ping"
+	ShortURL_PostURL_FullMethodName = "/shorturl.ShortURL/PostURL"
+	ShortURL_GetURL_FullMethodName  = "/shorturl.ShortURL/GetURL"
 )
 
 // ShortURLClient is the client API for ShortURL service.
@@ -27,6 +29,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ShortURLClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	PostURL(ctx context.Context, in *PostURLRequest, opts ...grpc.CallOption) (*PostURLResponse, error)
+	GetURL(ctx context.Context, in *GetURLRequest, opts ...grpc.CallOption) (*GetURLResponse, error)
 }
 
 type shortURLClient struct {
@@ -46,11 +50,31 @@ func (c *shortURLClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc
 	return out, nil
 }
 
+func (c *shortURLClient) PostURL(ctx context.Context, in *PostURLRequest, opts ...grpc.CallOption) (*PostURLResponse, error) {
+	out := new(PostURLResponse)
+	err := c.cc.Invoke(ctx, ShortURL_PostURL_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *shortURLClient) GetURL(ctx context.Context, in *GetURLRequest, opts ...grpc.CallOption) (*GetURLResponse, error) {
+	out := new(GetURLResponse)
+	err := c.cc.Invoke(ctx, ShortURL_GetURL_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShortURLServer is the server API for ShortURL service.
 // All implementations must embed UnimplementedShortURLServer
 // for forward compatibility
 type ShortURLServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	PostURL(context.Context, *PostURLRequest) (*PostURLResponse, error)
+	GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error)
 	mustEmbedUnimplementedShortURLServer()
 }
 
@@ -60,6 +84,12 @@ type UnimplementedShortURLServer struct {
 
 func (UnimplementedShortURLServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedShortURLServer) PostURL(context.Context, *PostURLRequest) (*PostURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PostURL not implemented")
+}
+func (UnimplementedShortURLServer) GetURL(context.Context, *GetURLRequest) (*GetURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetURL not implemented")
 }
 func (UnimplementedShortURLServer) mustEmbedUnimplementedShortURLServer() {}
 
@@ -92,6 +122,42 @@ func _ShortURL_Ping_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ShortURL_PostURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PostURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortURLServer).PostURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShortURL_PostURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortURLServer).PostURL(ctx, req.(*PostURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ShortURL_GetURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortURLServer).GetURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ShortURL_GetURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortURLServer).GetURL(ctx, req.(*GetURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ShortURL_ServiceDesc is the grpc.ServiceDesc for ShortURL service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +168,14 @@ var ShortURL_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _ShortURL_Ping_Handler,
+		},
+		{
+			MethodName: "PostURL",
+			Handler:    _ShortURL_PostURL_Handler,
+		},
+		{
+			MethodName: "GetURL",
+			Handler:    _ShortURL_GetURL_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
