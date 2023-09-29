@@ -7,11 +7,13 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/jon69/shorturl/internal/app/handlers"
+	"github.com/jon69/shorturl/internal/app/storage"
 )
 
 func Example() {
 	// создаем обработчик
-	handler := handlers.MakeMyHandler("", "")
+	urlstorage := storage.NewStorage("", "")
+	handler := handlers.MakeMyHandler("", urlstorage)
 	r := chi.NewRouter()
 
 	r.Get("/ping", handler.ServeGetPING)

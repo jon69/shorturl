@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package shorturl;
+
+option go_package = "shorturl/proto";
+
+
+message StatusMessage {
+  enum StatusEnum {
+      OK = 0;
+      ERROR = 1;
+      NOT_FOUND = 2;
+  }
+  StatusEnum status = 1;
+}
+
+
+message PingRequest {
+}
+message PingResponse {
+  StatusMessage stmsg = 1;
+}
+
+message PostURLRequest {
+  string url = 1;
+}
+message PostURLResponse {
+  StatusMessage stmsg = 1;
+  string short_url = 2;
+}
+
+message GetURLRequest {
+  string id = 1;
+}
+message GetURLResponse {
+  StatusMessage stmsg = 1;
+  string url = 2;
+}
+
+
+service ShortURL {
+  rpc Ping(PingRequest) returns (PingResponse);
+  rpc PostURL(PostURLRequest) returns (PostURLResponse);
+  rpc GetURL(GetURLRequest) returns (GetURLResponse);
+} 
